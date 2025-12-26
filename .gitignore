@@ -1,0 +1,15 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+.idea
+.nextflow*
+
+# Ignore Gradle build output directory / Nextflow pipeline folders
+build
+work
+results
+
+# Validation runs
+*.nf-test/
+*.nf-test*
+*.nf-test.log
+

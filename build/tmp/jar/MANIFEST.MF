@@ -1,7 +1,0 @@
-Manifest-Version: 1.0
-Plugin-Id: nf-pregex
-Plugin-Version: 0.1.0
-Plugin-Requires: >=24.10.0
-Plugin-Class: io.nextflow.pregex.PRegExPlugin
-Plugin-Provider: seqera-ai
-
