@@ -64,6 +64,114 @@ workflow {
 }
 ```
 
+## Bioinformatics Patterns Library
+
+nf-pregex includes a comprehensive library of pre-built patterns for common bioinformatics file formats and data types. These ready-to-use patterns save time and ensure correct regex for standard bioinformatics applications.
+
+### Using Bioinformatics Patterns
+
+```groovy
+#!/usr/bin/env nextflow
+
+include { 
+    DNASequence
+    FastqExtension
+    ReadPair
+    Chromosome
+} from 'plugin/nf-pregex'
+
+workflow {
+    // Match FASTQ files with read pairs
+    def fastqFiles = Sequence(
+        OneOrMore(WordChar()),
+        ReadPair(),
+        FastqExtension()
+    )
+    
+    // Filter files by pattern
+    channel.fromPath("data/*")
+        .filter { it.name =~ /${fastqFiles}/ }
+        .view()
+    
+    // Match DNA sequences with validation
+    def dna = DNASequence()
+    def sequence = "ACGTACGT"
+    if (sequence =~ /${dna}/) {
+        println "Valid DNA sequence!"
+    }
+}
+```
+
+### Available Bioinformatics Patterns
+
+#### Sequence Patterns
+- **`DNASequence()`** - DNA sequences (ACGT, case-insensitive)
+- **`StrictDNASequence()`** - Uppercase DNA only
+- **`DNASequenceWithAmbiguity()`** - DNA with IUPAC ambiguity codes (N, R, Y, etc.)
+- **`ProteinSequence()`** - Protein sequences (20 standard amino acids)
+- **`StrictProteinSequence()`** - Uppercase protein sequences
+- **`ProteinSequenceWithAmbiguity()`** - Protein with ambiguity codes (B, Z, X, *)
+- **`PhredQuality()`** - Phred quality scores (Phred+33 encoding)
+
+#### Genomic Identifiers
+- **`Chromosome()`** - Chromosome names (chr1-22, chrX, chrY, chrM, with/without 'chr')
+- **`StrictChromosome()`** - Chromosome names requiring 'chr' prefix
+- **`ReadPair()`** - Read pair identifiers (_R1, _R2, _1, _2, .R1, .R2, .1, .2)
+
+#### File Extensions (Case-Insensitive)
+- **`FastqExtension()`** - .fastq, .fq, with optional .gz
+- **`VcfExtension()`** - .vcf, .bcf, with optional .gz
+- **`AlignmentExtension()`** - .bam, .sam, .cram
+- **`BedExtension()`** - .bed, .bed.gz
+- **`GffGtfExtension()`** - .gff, .gff3, .gtf, with optional .gz
+- **`FastaExtension()`** - .fa, .fasta, .fna, with optional .gz
+
+### Examples
+
+#### Matching Paired-End FASTQ Files
+```groovy
+include { Sequence; OneOrMore; WordChar; ReadPair; FastqExtension } from 'plugin/nf-pregex'
+
+def pairedEndPattern = Sequence(
+    OneOrMore(WordChar()),  // sample name
+    ReadPair(),             // _R1, _R2, etc.
+    FastqExtension()        // .fastq.gz, .fq, etc.
+)
+
+// Matches: sample_R1.fastq.gz, control_R2.fq, test.1.fastq.gz
+```
+
+#### Validating VCF Files with Chromosome Names
+```groovy
+include { Sequence; OneOrMore; WordChar; Literal; Chromosome; VcfExtension } from 'plugin/nf-pregex'
+
+def vcfPattern = Sequence(
+    Chromosome(),           // chr1, chrX, 22, etc.
+    Literal("_"),
+    OneOrMore(WordChar()),
+    VcfExtension()          // .vcf, .vcf.gz, .bcf
+)
+
+// Matches: chr1_variants.vcf.gz, 22_filtered.bcf, chrX_calls.vcf
+```
+
+#### DNA Sequence Validation
+```groovy
+include { DNASequenceWithAmbiguity } from 'plugin/nf-pregex'
+
+def dnaPattern = DNASequenceWithAmbiguity()
+
+// Validates sequences with ambiguity codes
+def sequences = ["ACGTACGT", "ACGTN", "ACGTRYSWKMN"]
+sequences.each { seq ->
+    if (seq =~ /${dnaPattern}/) {
+        println "✓ Valid: ${seq}"
+    }
+}
+```
+
+See [docs/API.md](docs/API.md) for complete documentation of all bioinformatics patterns.
+
 ## API Reference
 
 ### Pattern Builders

@@ -9,6 +9,10 @@ Complete API reference for all PRegEx pattern builders.
 - [Character Classes](#character-classes)
 - [Anchors](#anchors)
 - [Method Chaining](#method-chaining)
+- [Bioinformatics Patterns](#bioinformatics-patterns)
+  - [Sequence Patterns](#sequence-patterns)
+  - [Genomic Identifiers](#genomic-identifiers)
+  - [File Extensions](#file-extensions)
 - [Usage Patterns](#usage-patterns)
 
 ## Pattern Builders
@@ -463,6 +467,428 @@ Creates a capturing group from the pattern.
 
 ```groovy
 Either(["foo", "bar"]).group()      // → ((foo|bar))
+```
+
+---
+
+## Bioinformatics Patterns
+
+The `BioinformaticsPatterns` class provides pre-built regex patterns specifically designed for common bioinformatics use cases. These patterns handle the complexity of matching biological sequences, file formats, and genomic identifiers.
+
+### Sequence Patterns
+
+#### DNASequence()
+
+Matches DNA sequences containing ACGT nucleotides (case-insensitive).
+
+**Syntax:**
+```groovy
+DNASequence()
+```
+
+**Returns:** PRegEx pattern matching one or more DNA nucleotides
+
+**Examples:**
+```groovy
+include { DNASequence } from 'plugin/nf-pregex'
+
+def dna = DNASequence()
+// Matches: ACGT, acgt, ATCGATCG, ACGTacgt
+```
+
+**Valid Characters:** A, C, G, T (case-insensitive)
+
+---
+
+#### StrictDNASequence()
+
+Matches DNA sequences with uppercase nucleotides only.
+
+**Syntax:**
+```groovy
+StrictDNASequence()
+```
+
+**Examples:**
+```groovy
+def strictDna = StrictDNASequence()
+// Matches: ACGT, ATCGATCG
+// Does NOT match: acgt, ACGTacgt
+```
+
+**Valid Characters:** A, C, G, T (uppercase only)
+
+---
+
+#### DNASequenceWithAmbiguity()
+
+Matches DNA sequences including IUPAC ambiguity codes.
+
+**Syntax:**
+```groovy
+DNASequenceWithAmbiguity()
+```
+
+**Examples:**
+```groovy
+def ambigDna = DNASequenceWithAmbiguity()
+// Matches: ACGT, ACGTN, ACGTRYMKSW, ACGTBDHV
+```
+
+**Valid Characters:**
+- Standard: A, C, G, T
+- Ambiguity codes: R (A/G), Y (C/T), S (G/C), W (A/T), K (G/T), M (A/C)
+- Wildcards: B (not A), D (not C), H (not G), V (not T), N (any)
+- Case-insensitive
+
+---
+
+#### ProteinSequence()
+
+Matches protein sequences with the 20 standard amino acids (case-insensitive).
+
+**Syntax:**
+```groovy
+ProteinSequence()
+```
+
+**Examples:**
+```groovy
+def protein = ProteinSequence()
+// Matches: ACDEFGHIKLMNPQRSTVWY, acdefghiklmnpqrstvwy, MVHLTPEEK
+```
+
+**Valid Characters:** A, C, D, E, F, G, H, I, K, L, M, N, P, Q, R, S, T, V, W, Y
+
+---
+
+#### StrictProteinSequence()
+
+Matches protein sequences with uppercase amino acids only.
+
+**Syntax:**
+```groovy
+StrictProteinSequence()
+```
+
+**Examples:**
+```groovy
+def strictProtein = StrictProteinSequence()
+// Matches: ACDEFGHIKLMNPQRSTVWY, MVHLTPEEK
+// Does NOT match: acdefg
+```
+
+---
+
+#### ProteinSequenceWithAmbiguity()
+
+Matches protein sequences including ambiguity codes.
+
+**Syntax:**
+```groovy
+ProteinSequenceWithAmbiguity()
+```
+
+**Examples:**
+```groovy
+def ambigProtein = ProteinSequenceWithAmbiguity()
+// Matches: MVHLTPEEKX, ACDEFGHBZX*
+```
+
+**Valid Characters:**
+- Standard 20 amino acids
+- B (Asx: Asp or Asn)
+- Z (Glx: Glu or Gln)
+- X (any amino acid)
+- \* (stop codon)
+
+---
+
+#### PhredQuality()
+
+Matches Phred quality scores using Phred+33 encoding.
+
+**Syntax:**
+```groovy
+PhredQuality()
+```
+
+**Examples:**
+```groovy
+def quality = PhredQuality()
+// Matches: !!!FFFFFF, IIIIIIIIII, ~~~~~~~~~~
+```
+
+**Character Range:** ASCII 33-126 (! through ~)
+
+---
+
+### Genomic Identifiers
+
+#### Chromosome()
+
+Matches chromosome names with flexible formatting.
+
+**Syntax:**
+```groovy
+Chromosome()
+```
+
+**Examples:**
+```groovy
+def chr = Chromosome()
+// Matches: chr1, chr22, chrX, chrY, chrM, 1, 22, X, Y, M
+```
+
+**Supported Formats:**
+- With prefix: chr1-chr22, chrX, chrY, chrM (case-insensitive X/Y/M)
+- Without prefix: 1-22, X, Y, M (case-insensitive X/Y/M)
+
+---
+
+#### StrictChromosome()
+
+Matches chromosome names requiring the 'chr' prefix.
+
+**Syntax:**
+```groovy
+StrictChromosome()
+```
+
+**Examples:**
+```groovy
+def strictChr = StrictChromosome()
+// Matches: chr1, chr22, chrX, chrY, chrM
+// Does NOT match: 1, 22, X
+```
+
+**Supported Formats:** chr1-chr22, chrX, chrY, chrM (case-insensitive X/Y/M)
+
+---
+
+#### ReadPair()
+
+Matches paired-end read identifiers.
+
+**Syntax:**
+```groovy
+ReadPair()
+```
+
+**Examples:**
+```groovy
+def readPair = ReadPair()
+// Matches: _R1, _R2, .R1, .R2, _1, _2, .1, .2
+```
+
+**Supported Patterns:**
+- Underscore separator: `_R1`, `_R2`, `_1`, `_2`
+- Dot separator: `.R1`, `.R2`, `.1`, `.2`
+
+---
+
+### File Extensions
+
+All file extension patterns support case-insensitive matching and handle compressed files (.gz) automatically where applicable.
+
+#### FastqExtension()
+
+Matches FASTQ file extensions.
+
+**Syntax:**
+```groovy
+FastqExtension()
+```
+
+**Examples:**
+```groovy
+def fastq = FastqExtension()
+// Matches: .fastq, .fq, .fastq.gz, .fq.gz, .FASTQ, .FQ.GZ
+```
+
+**Supported Extensions:** .fastq, .fq (with optional .gz compression)
+
+---
+
+#### VcfExtension()
+
+Matches VCF file extensions.
+
+**Syntax:**
+```groovy
+VcfExtension()
+```
+
+**Examples:**
+```groovy
+def vcf = VcfExtension()
+// Matches: .vcf, .vcf.gz, .bcf, .VCF, .BCF
+```
+
+**Supported Extensions:** .vcf, .bcf (with optional .gz for VCF)
+
+---
+
+#### AlignmentExtension()
+
+Matches alignment file extensions.
+
+**Syntax:**
+```groovy
+AlignmentExtension()
+```
+
+**Examples:**
+```groovy
+def alignment = AlignmentExtension()
+// Matches: .bam, .sam, .cram, .BAM, .SAM, .CRAM
+```
+
+**Supported Extensions:** .bam, .sam, .cram
+
+---
+
+#### BedExtension()
+
+Matches BED file extensions.
+
+**Syntax:**
+```groovy
+BedExtension()
+```
+
+**Examples:**
+```groovy
+def bed = BedExtension()
+// Matches: .bed, .bed.gz, .BED, .BED.GZ
+```
+
+**Supported Extensions:** .bed (with optional .gz compression)
+
+---
+
+#### GffGtfExtension()
+
+Matches GFF/GTF file extensions.
+
+**Syntax:**
+```groovy
+GffGtfExtension()
+```
+
+**Examples:**
+```groovy
+def annotation = GffGtfExtension()
+// Matches: .gff, .gff3, .gtf, .gff.gz, .gff3.gz, .gtf.gz
+```
+
+**Supported Extensions:** .gff, .gff3, .gtf (with optional .gz compression)
+
+---
+
+#### FastaExtension()
+
+Matches FASTA file extensions.
+
+**Syntax:**
+```groovy
+FastaExtension()
+```
+
+**Examples:**
+```groovy
+def fasta = FastaExtension()
+// Matches: .fa, .fasta, .fna, .fa.gz, .fasta.gz, .fna.gz
+```
+
+**Supported Extensions:** .fa, .fasta, .fna (with optional .gz compression)
+
+---
+
+### Bioinformatics Pattern Examples
+
+#### Complete FASTQ Filename Matching
+
+```groovy
+include { 
+    Sequence
+    OneOrMore
+    WordChar
+    ReadPair
+    FastqExtension
+} from 'plugin/nf-pregex'
+
+// Match: sample_R1.fastq.gz, control_R2.fq, test.1.fastq.gz
+def fastqPattern = Sequence(
+    OneOrMore(WordChar()),  // Sample name
+    ReadPair(),             // _R1, _R2, etc.
+    FastqExtension()        // .fastq.gz, .fq, etc.
+)
+```
+
+#### VCF Files with Chromosome Information
+
+```groovy
+include {
+    Sequence
+    Chromosome
+    Literal
+    OneOrMore
+    WordChar
+    VcfExtension
+} from 'plugin/nf-pregex'
+
+// Match: chr1_variants.vcf.gz, 22_filtered.bcf, chrX_calls.vcf
+def vcfPattern = Sequence(
+    Chromosome(),           // chr1, chrX, 22, etc.
+    Literal("_"),
+    OneOrMore(WordChar()),  // Description
+    VcfExtension()          // .vcf, .vcf.gz, .bcf
+)
+```
+
+#### DNA Sequence Validation in Workflow
+
+```groovy
+include { DNASequenceWithAmbiguity } from 'plugin/nf-pregex'
+
+workflow {
+    def dnaPattern = DNASequenceWithAmbiguity()
+    
+    channel.of("ACGTACGT", "ACGTN", "ACGTRYSWKMN", "INVALID123")
+        .filter { it =~ /${dnaPattern}/ }
+        .view { "Valid DNA: ${it}" }
+}
+```
+
+#### Comprehensive File Filtering
+
+```groovy
+include {
+    Either
+    Sequence
+    OneOrMore
+    WordChar
+    FastqExtension
+    VcfExtension
+    AlignmentExtension
+} from 'plugin/nf-pregex'
+
+workflow {
+    // Match any sequencing data file
+    def sequencingFile = Sequence(
+        OneOrMore(WordChar()),
+        Either(
+            FastqExtension(),
+            VcfExtension(),
+            AlignmentExtension()
+        )
+    )
+    
+    channel.fromPath("data/*")
+        .filter { it.name =~ /${sequencingFile}/ }
+        .view { "Found: ${it.name}" }
+}
 ```
 
 ---
