@@ -357,9 +357,11 @@ abstract class PRegEx {
         @groovy.transform.CompileDynamic
         @Override
         String toRegex() {
-            def escaped = chars.replaceAll(/([\\^\-\]])/) { match -> 
-                '\\' + match[1]
-            }
+            // Escape backslash first, then other special chars
+            def escaped = chars.replace('\\', '\\\\')
+                              .replace('^', '\\^')
+                              .replace(']', '\\]')
+                              .replace('-', '\\-')
             return negated ? "[^${escaped}]" : "[${escaped}]"
         }
     }
