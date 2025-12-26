@@ -7,7 +7,7 @@ clean:
 	./gradlew clean
 
 install:
-	./gradlew copyPluginZip
+	./gradlew installPlugin
 
 test:
 	./gradlew test
