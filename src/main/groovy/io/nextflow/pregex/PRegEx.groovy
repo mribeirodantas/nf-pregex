@@ -342,6 +342,82 @@ abstract class PRegEx {
     }
 
     /**
+     * Pattern that matches a character range.
+     * Creates patterns like [a-z], [0-9], [A-Z].
+     */
+    @CompileStatic
+    static class CharRange extends PRegEx {
+        private final char start
+        private final char end
+
+        CharRange(char start, char end) {
+            if (start > end) {
+                throw new IllegalArgumentException("Start character '${start}' must be less than or equal to end character '${end}'")
+            }
+            this.start = start
+            this.end = end
+        }
+
+        @Override
+        String toRegex() {
+            // Escape special characters if needed
+            def startChar = escapeCharForRange(start)
+            def endChar = escapeCharForRange(end)
+            return "[${startChar}-${endChar}]"
+        }
+
+        private static String escapeCharForRange(char c) {
+            // Characters that need escaping in character classes: ], \, ^, -
+            switch (c) {
+                case '\\':
+                    return '\\\\'
+                case '^':
+                    return '\\^'
+                case ']':
+                    return '\\]'
+                case '-':
+                    return '\\-'
+                default:
+                    return c.toString()
+            }
+        }
+    }
+
+    /**
+     * Pattern that matches multiple character ranges.
+     * Creates patterns like [a-zA-Z], [a-zA-Z0-9], etc.
+     */
+    @CompileStatic
+    static class MultiRange extends PRegEx {
+        private final List<CharRange> ranges
+
+        MultiRange(List<CharRange> ranges) {
+            if (ranges == null || ranges.isEmpty()) {
+                throw new IllegalArgumentException("At least one CharRange is required")
+            }
+            this.ranges = ranges
+        }
+
+        @Override
+        String toRegex() {
+            if (ranges.size() == 1) {
+                // Single range - just return the range pattern
+                return ranges[0].toRegex()
+            }
+            
+            // Multiple ranges - combine into a single character class
+            def rangeStrings = ranges.collect { range ->
+                // Extract the range part without the brackets
+                def regex = range.toRegex()
+                // Remove the [ and ] from each range
+                regex.substring(1, regex.length() - 1)
+            }
+            
+            return "[${rangeStrings.join('')}]"
+        }
+    }
+
+    /**
      * Pattern that matches a character class.
      */
     @CompileStatic
