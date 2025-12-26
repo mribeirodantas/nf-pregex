@@ -36,12 +36,12 @@ Questions:
 ```groovy
 include { Sequence; OneOrMore; Literal; Either; WordChar } from 'plugin/nf-pregex'
 
-def pattern = Sequence(
+def pattern = Sequence([
     OneOrMore(WordChar()),      // One or more word characters
     Literal("_"),               // Literal underscore
-    Either("R1", "R2"),         // Either R1 or R2
+    Either(["R1", "R2"]),         // Either R1 or R2
     Literal(".fastq.gz")        // Literal file extension
-)
+])
 ```
 
 Much clearer! The pattern is self-documenting.
@@ -57,7 +57,7 @@ include { Either; Literal } from 'plugin/nf-pregex'
 
 workflow {
     // Match "hello" or "hi"
-    def greeting = Either("hello", "hi")
+    def greeting = Either(["hello", "hi"])
     
     // Test it
     def tests = ["hello", "hi", "hey"]
@@ -92,13 +92,13 @@ include {
 
 workflow {
     // Match .txt, .txt.gz, .txt.zip, etc.
-    def compressedText = Sequence(
+    def compressedText = Sequence([
         Literal(".txt"),
-        Optional(Sequence(
+        Optional(Sequence([
             Literal("."),
-            Either("gz", "zip", "bz2")
-        ))
-    )
+            Either(["gz", "zip", "bz2"])
+        ]))
+    ])
     
     println compressedText  // → \.txt((\.(gz|zip|bz2)))?
 }
@@ -119,13 +119,13 @@ include {
 workflow {
     // Pattern: SAMPLE001_T1 or SAMPLE001_C1
     // (T = Treatment, C = Control)
-    def sampleId = Sequence(
+    def sampleId = Sequence([
         Literal("SAMPLE"),
         Digit().exactly(3),
         Literal("_"),
-        Either("T", "C"),
+        Either(["T", "C"]),
         Digit()
-    )
+    ])
     
     // Test samples
     def samples = [
@@ -156,12 +156,12 @@ include {
 
 workflow {
     // Pattern for paired-end FASTQ files
-    def fastqPattern = Sequence(
+    def fastqPattern = Sequence([
         OneOrMore(WordChar()),
         Literal("_"),
-        Either("R1", "R2"),
+        Either(["R1", "R2"]),
         Literal(".fastq.gz")
-    )
+    ])
     
     // Create test channel
     channel
@@ -189,12 +189,12 @@ include {
 } from 'plugin/nf-pregex'
 
 workflow {
-    def fastqPattern = Sequence(
+    def fastqPattern = Sequence([
         OneOrMore(WordChar()),
         Literal("_"),
-        Either("R1", "R2"),
+        Either(["R1", "R2"]),
         Literal(".fastq.gz")
-    )
+    ])
     
     channel
         .of(
@@ -236,24 +236,24 @@ def sampleName() {
 }
 
 def readPair() {
-    Either("R1", "R2")
+    Either(["R1", "R2"])
 }
 
 def fastqExtension() {
-    Sequence(
+    Sequence([
         Literal(".fastq"),
         Optional(Literal(".gz"))
-    )
+    ])
 }
 
 // Compose them
 workflow {
-    def fastqPattern = Sequence(
+    def fastqPattern = Sequence([
         sampleName(),
         Literal("_"),
         readPair(),
         fastqExtension()
-    )
+    ])
     
     println "FASTQ pattern: ${fastqPattern}"
 }
@@ -306,13 +306,13 @@ include {
 } from 'plugin/nf-pregex'
 
 // Define patterns
-def fastqPattern = Sequence(
+def fastqPattern = Sequence([
     OneOrMore(WordChar()),
     Literal("_"),
-    Either("R1", "R2"),
+    Either(["R1", "R2"]),
     Literal(".fastq"),
     Optional(Literal(".gz"))
-)
+])
 
 def sampleIdFromFastq = Sequence(
     OneOrMore(WordChar())
@@ -352,10 +352,10 @@ workflow {
 include { Sequence; Literal; Digit } from 'plugin/nf-pregex'
 
 workflow {
-    def pattern = Sequence(
+    def pattern = Sequence([
         Literal("sample"),
         Digit().exactly(3)
-    )
+    ])
     
     // See what regex string is generated
     println "Pattern: ${pattern}"
@@ -384,7 +384,7 @@ def correct = Literal("file.txt")  // → file\.txt
 include { Literal; Either } from 'plugin/nf-pregex'
 
 // ❌ Wrong - interpolating pattern object directly
-def pattern = Either("R1", "R2")
+def pattern = Either(["R1", "R2"])
 def wrong = "*_${pattern}.fastq.gz"  // Won't work as expected
 
 // ✓ Correct - use pattern in regex context
@@ -400,10 +400,10 @@ def regex = /${pattern}/         // For pattern matching
 include { Sequence; OneOrMore; Literal; WordChar } from 'plugin/nf-pregex'
 
 workflow {
-    def pattern = Sequence(
+    def pattern = Sequence([
         OneOrMore(WordChar()),
         Literal(".txt")
-    )
+    ])
     
     // Compile once, reuse many times
     def compiled = ~/${pattern}/
@@ -424,7 +424,7 @@ include { Either; Literal } from 'plugin/nf-pregex'
 // file globbing instead of regex:
 
 // Instead of this:
-def pattern = Either("R1", "R2")
+def pattern = Either(["R1", "R2"])
 channel.fromPath("data/*_{R1,R2}.fastq.gz")
 
 // This is more efficient:
@@ -447,26 +447,26 @@ include {
 
 // Custom helper for version numbers
 def versionNumber() {
-    Sequence(
+    Sequence([
         Digit().oneOrMore(),
         Literal("."),
         Digit().oneOrMore(),
-        Optional(Sequence(
+        Optional(Sequence([
             Literal("."),
             Digit().oneOrMore()
-        ))
-    )
+        ]))
+    ])
 }
 
 // Custom helper for dates (YYYY-MM-DD)
 def isoDate() {
-    Sequence(
+    Sequence([
         Digit().exactly(4),
         Literal("-"),
         Digit().exactly(2),
         Literal("-"),
         Digit().exactly(2)
-    )
+    ])
 }
 
 workflow {

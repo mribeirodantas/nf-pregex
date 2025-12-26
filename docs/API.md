@@ -13,25 +13,25 @@ Complete API reference for all PRegEx pattern builders.
 
 ## Pattern Builders
 
-### Either(String...)
+### Either(List)
 
 Creates an alternation pattern that matches any of the provided alternatives.
 
 **Syntax:**
 ```groovy
-Either(String... alternatives)
+Either(List alternatives)
 ```
 
 **Parameters:**
-- `alternatives` - Variable number of string alternatives (at least one required)
+- `alternatives` - List of string alternatives (at least one required)
 
 **Returns:** PRegEx pattern object
 
 **Examples:**
 ```groovy
-Either("foo", "bar")              // → (foo|bar)
-Either("R1", "R2", "R3")          // → (R1|R2|R3)
-Either("fastq", "fq")             // → (fastq|fq)
+Either(["foo", "bar"])              // → (foo|bar)
+Either(["R1", "R2", "R3"])          // → (R1|R2|R3)
+Either(["fastq", "fq"])             // → (fastq|fq)
 ```
 
 **Notes:**
@@ -70,33 +70,33 @@ Literal("$10.00")                 // → \$10\.00
 
 ---
 
-### Sequence(PRegEx...)
+### Sequence(List)
 
 Concatenates multiple patterns in order.
 
 **Syntax:**
 ```groovy
-Sequence(PRegEx... patterns)
+Sequence(List patterns)
 ```
 
 **Parameters:**
-- `patterns` - Variable number of PRegEx patterns to concatenate
+- `patterns` - List of PRegEx patterns to concatenate
 
 **Returns:** PRegEx pattern object
 
 **Examples:**
 ```groovy
-Sequence(
+Sequence([
     Literal("hello"),
     Literal(" "),
     Literal("world")
-)                                 // → hello world
+])                                 // → hello world
 
-Sequence(
+Sequence([
     Literal("sample"),
     Digit(),
     Literal(".txt")
-)                                 // → sample\d\.txt
+])                                 // → sample\d\.txt
 ```
 
 ---
@@ -364,10 +364,10 @@ StartOfLine()
 
 **Examples:**
 ```groovy
-Sequence(
+Sequence([
     StartOfLine(),
     Literal("hello")
-)                                 // → ^hello
+])                                 // → ^hello
 ```
 
 ---
@@ -385,10 +385,10 @@ EndOfLine()
 
 **Examples:**
 ```groovy
-Sequence(
+Sequence([
     Literal("world"),
     EndOfLine()
-)                                 // → world$
+])                                 // → world$
 ```
 
 ---
@@ -462,7 +462,7 @@ Literal("hello")
 Creates a capturing group from the pattern.
 
 ```groovy
-Either("foo", "bar").group()      // → ((foo|bar))
+Either(["foo", "bar"]).group()      // → ((foo|bar))
 ```
 
 ---
@@ -472,55 +472,55 @@ Either("foo", "bar").group()      // → ((foo|bar))
 ### Email Validation
 
 ```groovy
-def emailPattern = Sequence(
+def emailPattern = Sequence([
     OneOrMore(WordChar()),
     Literal("@"),
     OneOrMore(WordChar()),
     Literal("."),
     Range(WordChar(), 2, 3)
-)
+])
 // → (\w)+@(\w)+\.(\w){2,3}
 ```
 
 ### FASTQ Files
 
 ```groovy
-def fastqPattern = Sequence(
+def fastqPattern = Sequence([
     OneOrMore(WordChar()),
     Literal("_"),
-    Either("R1", "R2"),
+    Either(["R1", "R2"]),
     Literal(".fastq"),
     Optional(Literal(".gz"))
-)
+])
 // → (\w)+_(R1|R2)\.fastq(\.gz)?
 ```
 
 ### Sample IDs
 
 ```groovy
-def sampleIdPattern = Sequence(
+def sampleIdPattern = Sequence([
     Literal("sample"),
     Digit().exactly(3),
     Literal("_"),
-    Either("control", "treatment")
-)
+    Either(["control", "treatment"])
+])
 // → sample(\d){3}_(control|treatment)
 ```
 
 ### Phone Numbers
 
 ```groovy
-def phonePattern = Sequence(
+def phonePattern = Sequence([
     Optional(Literal("+")),
     Digit().range(10, 15)
-)
+])
 // → (\+)?(\\d){10,15}
 ```
 
 ### IP Address (Simple)
 
 ```groovy
-def ipPattern = Sequence(
+def ipPattern = Sequence([
     Digit().range(1, 3),
     Literal("."),
     Digit().range(1, 3),
@@ -528,7 +528,7 @@ def ipPattern = Sequence(
     Digit().range(1, 3),
     Literal("."),
     Digit().range(1, 3)
-)
+])
 // → (\d){1,3}\.(\d){1,3}\.(\d){1,3}\.(\d){1,3}
 ```
 
@@ -542,12 +542,12 @@ def ipPattern = Sequence(
 include { Sequence; Literal; Either; OneOrMore; WordChar } from 'plugin/nf-pregex'
 
 workflow {
-    def pattern = Sequence(
+    def pattern = Sequence([
         OneOrMore(WordChar()),
         Literal("_"),
-        Either("R1", "R2"),
+        Either(["R1", "R2"]),
         Literal(".fastq.gz")
-    )
+    ])
     
     // Filter files
     channel.fromPath("data/*")
@@ -583,7 +583,7 @@ The plugin provides clear error messages for common mistakes:
 
 ```groovy
 // Empty alternatives
-Either()                          // IllegalArgumentException
+Either([])                          // IllegalArgumentException
 
 // Negative counts
 Exactly(Digit(), -1)              // IllegalArgumentException

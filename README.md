@@ -15,13 +15,13 @@ def pattern = /sample(\d)+_(R1|R2)\.fastq\.gz/
 ```groovy
 include { Sequence; Literal; OneOrMore; Digit; Either } from 'plugin/nf-pregex'
 
-def pattern = Sequence(
+def pattern = Sequence([
     Literal("sample"),
     OneOrMore(Digit()),
     Literal("_"),
-    Either("R1", "R2"),
+    Either(["R1", "R2"]),
     Literal(".fastq.gz")
-)
+])
 ```
 
 ## Installation
@@ -49,11 +49,11 @@ include { Either; Literal; Optional } from 'plugin/nf-pregex'
 
 workflow {
     // Match "color" or "colour"
-    def pattern = Sequence(
+    def pattern = Sequence([
         Literal("colo"),
         Optional(Literal("u")),
         Literal("r")
-    )
+    ])
     
     println pattern  // Outputs: colo(u)?r
     
@@ -68,11 +68,11 @@ workflow {
 
 ### Pattern Builders
 
-#### Either(String...)
+#### Either(List)
 Creates an alternation pattern (OR operation).
 
 ```groovy
-Either("foo", "bar", "baz")  // → (foo|bar|baz)
+Either(["foo", "bar", "baz"])  // → (foo|bar|baz)
 ```
 
 #### Literal(String)
@@ -125,11 +125,11 @@ Matches at least n occurrences of a pattern.
 AtLeast(Digit(), 2)  // → (\d){2,}
 ```
 
-#### Sequence(PRegEx...)
+#### Sequence(List)
 Concatenates multiple patterns in order.
 
 ```groovy
-Sequence(Literal("hello"), Literal(" "), Literal("world"))  // → hello world
+Sequence([Literal("hello"), Literal(" "), Literal("world")])  // → hello world
 ```
 
 ### Character Classes
@@ -215,13 +215,13 @@ Literal("a").range(2, 5)   // → (a){2,5}
 ```groovy
 include { Sequence; OneOrMore; Literal; Either; WordChar } from 'plugin/nf-pregex'
 
-def emailPattern = Sequence(
+def emailPattern = Sequence([
     OneOrMore(WordChar()),
     Literal("@"),
     OneOrMore(WordChar()),
     Literal("."),
-    Either("com", "org", "edu")
-)
+    Either(["com", "org", "edu"])
+])
 // → (\w)+@(\w)+\.(com|org|edu)
 ```
 
@@ -229,13 +229,13 @@ def emailPattern = Sequence(
 ```groovy
 include { Sequence; OneOrMore; Literal; Either; Optional; WordChar } from 'plugin/nf-pregex'
 
-def fastqPattern = Sequence(
+def fastqPattern = Sequence([
     OneOrMore(WordChar()),
     Literal("_"),
-    Either("R1", "R2"),
+    Either(["R1", "R2"]),
     Literal(".fastq"),
     Optional(Literal(".gz"))
-)
+])
 // → (\w)+_(R1|R2)\.fastq(\.gz)?
 
 // Use with channel operations
@@ -248,15 +248,15 @@ channel.fromPath("data/*")
 ```groovy
 include { Sequence; Literal; Either; Digit } from 'plugin/nf-pregex'
 
-def samplePattern = Sequence(
+def samplePattern = Sequence([
     Literal("S"),
     Digit().exactly(3),
     Literal("_"),
-    Either("T", "C"),
+    Either(["T", "C"]),
     Digit(),
     Literal("_"),
-    Either("R1", "R2")
-)
+    Either(["R1", "R2"])
+])
 // → S(\d){3}_(T|C)(\d)_(R1|R2)
 ```
 
@@ -264,17 +264,17 @@ def samplePattern = Sequence(
 ```groovy
 include { Sequence; OneOrMore; Literal; Optional; Digit; WordChar } from 'plugin/nf-pregex'
 
-def vcfPattern = Sequence(
+def vcfPattern = Sequence([
     OneOrMore(WordChar()),
     Literal("."),
-    Optional(Sequence(
+    Optional(Sequence([
         Literal("v"),
         OneOrMore(Digit()),
         Literal(".")
-    )),
+    ])),
     Literal("vcf"),
     Optional(Literal(".gz"))
-)
+])
 // Matches: variants.vcf, variants.v1.vcf.gz, etc.
 ```
 

@@ -7,7 +7,7 @@ version = '0.1.0'
 nextflowPlugin {
     nextflowVersion = '24.10.0'
     
-    provider = 'seqera-ai'
+    provider = 'nextflow'
     className = 'io.nextflow.pregex.PRegExPlugin'
     extensionPoints = [
         'io.nextflow.pregex.PRegExExtension'
