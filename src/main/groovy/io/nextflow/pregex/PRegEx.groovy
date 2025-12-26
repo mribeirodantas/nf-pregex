@@ -386,8 +386,6 @@ abstract class PRegEx {
      */
     @groovy.transform.CompileDynamic
     private static String escapeRegex(String text) {
-        return text.replaceAll(/([-\\.*+?^${}()\[\]|])/) { match ->  
-            '\\' + match[1]
-        }   
+        return text.replaceAll("([\\\\.*+?^" + '$' + "{}()\\[\\]|\\-])", '\\\\$1')
     }
 }

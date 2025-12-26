@@ -1,61 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.nextflow.pregex.PRegExTest" tests="30" skipped="0" failures="2" errors="0" timestamp="2025-12-26T05:39:57.456Z" hostname="greychill.local" time="0.045">
+<testsuite name="io.nextflow.pregex.PRegExTest" tests="30" skipped="0" failures="0" errors="0" timestamp="2025-12-26T05:50:37.202Z" hostname="greychill.local" time="0.047">
   <properties/>
   <testcase name="Either should create alternation pattern" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
   <testcase name="Either with single alternative should not add alternation" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
   <testcase name="Either should escape special characters" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="Literal should escape special regex characters" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="Literal should handle brackets and parens" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="Literal should escape special regex characters" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
+  <testcase name="Literal should handle brackets and parens" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
   <testcase name="Optional should wrap pattern with ()?​" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="OneOrMore should wrap pattern with ()+" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="ZeroOrMore should wrap pattern with ()*" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="Exactly should create {n} quantifier" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="OneOrMore should wrap pattern with ()+" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
+  <testcase name="ZeroOrMore should wrap pattern with ()*" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
+  <testcase name="Exactly should create {n} quantifier" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
   <testcase name="Range should create {min,max} quantifier" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
   <testcase name="AtLeast should create {n,} quantifier" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="Sequence should concatenate patterns" classname="io.nextflow.pregex.PRegExTest" time="0.002">
-    <failure message="Condition not satisfied:&#10;&#10;pattern.toRegex() == 'hello world'&#10;|       |         |&#10;|       |         false&#10;|       |         3 differences (78% similarity)&#10;|       |         he(\\)l(\\)lo wor(\\)ld&#10;|       |         he(-~)l(-~)lo wor(-~)ld&#10;|       he\l\lo wor\ld&#10;he\l\lo wor\ld&#10;" type="org.spockframework.runtime.SpockComparisonFailure">Condition not satisfied:
-
-pattern.toRegex() == 'hello world'
-|       |         |
-|       |         false
-|       |         3 differences (78% similarity)
-|       |         he(\\)l(\\)lo wor(\\)ld
-|       |         he(-~)l(-~)lo wor(-~)ld
-|       he\l\lo wor\ld
-he\l\lo wor\ld
-
-	at io.nextflow.pregex.PRegExTest.Sequence should concatenate patterns(PRegExTest.groovy:108)
-</failure>
-  </testcase>
-  <testcase name="AnyChar should produce dot" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
+  <testcase name="Sequence should concatenate patterns" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="AnyChar should produce dot" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
   <testcase name="Digit should produce \d" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
   <testcase name="WordChar should produce \w" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
   <testcase name="Whitespace should produce \s" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
   <testcase name="StartOfLine should produce ^" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="EndOfLine should produce dollar sign" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
-  <testcase name="CharClass should create character class" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="CharClass with negation should create negated class" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="CharClass should escape special chars" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
+  <testcase name="EndOfLine should produce dollar sign" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="CharClass should create character class" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
+  <testcase name="CharClass with negation should create negated class" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
+  <testcase name="CharClass should escape special chars" classname="io.nextflow.pregex.PRegExTest" time="0.003"/>
   <testcase name="Group should wrap in parentheses" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
-  <testcase name="Complex pattern should work correctly" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
-  <testcase name="Chained methods should work" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
-  <testcase name="then() method should concatenate patterns" classname="io.nextflow.pregex.PRegExTest" time="0.003">
-    <failure message="Condition not satisfied:&#10;&#10;pattern.toRegex() == 'hello world'&#10;|       |         |&#10;|       |         false&#10;|       |         3 differences (78% similarity)&#10;|       |         he(\\)l(\\)lo wor(\\)ld&#10;|       |         he(-~)l(-~)lo wor(-~)ld&#10;|       he\l\lo wor\ld&#10;he\l\lo wor\ld&#10;" type="org.spockframework.runtime.SpockComparisonFailure">Condition not satisfied:
-
-pattern.toRegex() == 'hello world'
-|       |         |
-|       |         false
-|       |         3 differences (78% similarity)
-|       |         he(\\)l(\\)lo wor(\\)ld
-|       |         he(-~)l(-~)lo wor(-~)ld
-|       he\l\lo wor\ld
-he\l\lo wor\ld
-
-	at io.nextflow.pregex.PRegExTest.then() method should concatenate patterns(PRegExTest.groovy:221)
-</failure>
-  </testcase>
+  <testcase name="Complex pattern should work correctly" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="Chained methods should work" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="then() method should concatenate patterns" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
   <testcase name="Either should throw exception for empty alternatives" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
-  <testcase name="Exactly should throw exception for negative count" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>
+  <testcase name="Exactly should throw exception for negative count" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
   <testcase name="Range should throw exception for invalid range [min: 5, max: 2, #0]" classname="io.nextflow.pregex.PRegExTest" time="0.002"/>
   <testcase name="Range should throw exception for invalid range [min: -1, max: 5, #1]" classname="io.nextflow.pregex.PRegExTest" time="0.0"/>
   <testcase name="toString() should return regex" classname="io.nextflow.pregex.PRegExTest" time="0.001"/>

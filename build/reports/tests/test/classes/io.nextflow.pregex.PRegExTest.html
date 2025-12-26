@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">0.033s</div>
+<div class="counter">0.034s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">93%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,53 +61,9 @@
 <div class="tab-container">
 <ul class="tabLinks">
 <li>
-<a href="#">Failed tests</a>
-</li>
-<li>
 <a href="#">Tests</a>
 </li>
 </ul>
-<div class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="Sequence should concatenate patterns"></a>
-<h3 class="failures">Sequence should concatenate patterns</h3>
-<span class="code">
-<pre>Condition not satisfied:
-
-pattern.toRegex() == 'hello world'
-|       |         |
-|       |         false
-|       |         3 differences (78% similarity)
-|       |         he(\\)l(\\)lo wor(\\)ld
-|       |         he(-~)l(-~)lo wor(-~)ld
-|       he\l\lo wor\ld
-he\l\lo wor\ld
-
-	at io.nextflow.pregex.PRegExTest.Sequence should concatenate patterns(PRegExTest.groovy:108)
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="then() method should concatenate patterns"></a>
-<h3 class="failures">then() method should concatenate patterns</h3>
-<span class="code">
-<pre>Condition not satisfied:
-
-pattern.toRegex() == 'hello world'
-|       |         |
-|       |         false
-|       |         3 differences (78% similarity)
-|       |         he(\\)l(\\)lo wor(\\)ld
-|       |         he(-~)l(-~)lo wor(-~)ld
-|       he\l\lo wor\ld
-he\l\lo wor\ld
-
-	at io.nextflow.pregex.PRegExTest.then() method should concatenate patterns(PRegExTest.groovy:221)
-</pre>
-</span>
-</div>
-</div>
 <div class="tab">
 <h2>Tests</h2>
 <table>
@@ -120,7 +76,7 @@ he\l\lo wor\ld
 </thead>
 <tr>
 <td class="success">AnyChar should produce dot</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -130,27 +86,27 @@ he\l\lo wor\ld
 </tr>
 <tr>
 <td class="success">Chained methods should work</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">CharClass should create character class</td>
-<td class="success">0.001s</td>
+<td class="success">0.002s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">CharClass should escape special chars</td>
-<td class="success">0.002s</td>
+<td class="success">0.003s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">CharClass with negation should create negated class</td>
-<td class="success">0.001s</td>
+<td class="success">0.002s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">Complex pattern should work correctly</td>
-<td class="success">0.002s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -180,17 +136,17 @@ he\l\lo wor\ld
 </tr>
 <tr>
 <td class="success">EndOfLine should produce dollar sign</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">Exactly should create {n} quantifier</td>
-<td class="success">0.001s</td>
+<td class="success">0.002s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">Exactly should throw exception for negative count</td>
-<td class="success">0.001s</td>
+<td class="success">0.002s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -200,17 +156,17 @@ he\l\lo wor\ld
 </tr>
 <tr>
 <td class="success">Literal should escape special regex characters</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">Literal should handle brackets and parens</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">OneOrMore should wrap pattern with ()+</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -234,9 +190,9 @@ he\l\lo wor\ld
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">Sequence should concatenate patterns</td>
-<td class="failures">0.002s</td>
-<td class="failures">failed</td>
+<td class="success">Sequence should concatenate patterns</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">StartOfLine should produce ^</td>
@@ -255,13 +211,13 @@ he\l\lo wor\ld
 </tr>
 <tr>
 <td class="success">ZeroOrMore should wrap pattern with ()*</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">then() method should concatenate patterns</td>
-<td class="failures">0.003s</td>
-<td class="failures">failed</td>
+<td class="success">then() method should concatenate patterns</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toString() should return regex</td>
@@ -278,7 +234,7 @@ he\l\lo wor\ld
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="https://www.gradle.org">Gradle 8.14</a> at Dec 26, 2025, 2:39:57 AM</p>
+<a href="https://www.gradle.org">Gradle 8.14</a> at Dec 26, 2025, 2:50:37 AM</p>
 </div>
 </div>
 </body>
