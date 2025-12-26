@@ -358,6 +358,20 @@ abstract class PRegEx {
             this.end = end
         }
 
+        CharRange(String start, String end) {
+            if (start == null || start.length() != 1) {
+                throw new IllegalArgumentException("Start must be a single character string")
+            }
+            if (end == null || end.length() != 1) {
+                throw new IllegalArgumentException("End must be a single character string")
+            }
+            this.start = start.charAt(0)
+            this.end = end.charAt(0)
+            if (this.start > this.end) {
+                throw new IllegalArgumentException("Start character '${this.start}' must be less than or equal to end character '${this.end}'")
+            }
+        }
+
         @Override
         String toRegex() {
             // Escape special characters if needed

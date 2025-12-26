@@ -341,6 +341,85 @@ class PRegExTest extends Specification {
         pattern.toRegex() == '([a-z])+'
     }
 
+    // CharRange String constructor tests
+
+    def "CharRange String constructor should create simple lowercase range"() {
+        when:
+        def pattern = new PRegEx.CharRange('a', 'z')
+
+        then:
+        pattern.toRegex() == '[a-z]'
+    }
+
+    def "CharRange String constructor should create simple uppercase range"() {
+        when:
+        def pattern = new PRegEx.CharRange('A', 'Z')
+
+        then:
+        pattern.toRegex() == '[A-Z]'
+    }
+
+    def "CharRange String constructor should create digit range"() {
+        when:
+        def pattern = new PRegEx.CharRange('0', '9')
+
+        then:
+        pattern.toRegex() == '[0-9]'
+    }
+
+    def "CharRange String constructor should throw exception for invalid range"() {
+        when:
+        new PRegEx.CharRange('z', 'a')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("must be less than or equal to")
+    }
+
+    def "CharRange String constructor should throw exception for multi-char start"() {
+        when:
+        new PRegEx.CharRange('ab', 'z')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("single character")
+    }
+
+    def "CharRange String constructor should throw exception for multi-char end"() {
+        when:
+        new PRegEx.CharRange('a', 'xyz')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("single character")
+    }
+
+    def "CharRange String constructor should throw exception for null start"() {
+        when:
+        new PRegEx.CharRange(null, 'z')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("single character")
+    }
+
+    def "CharRange String constructor should throw exception for empty start"() {
+        when:
+        new PRegEx.CharRange('', 'z')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("single character")
+    }
+
+    def "CharRange String constructor should work with quantifiers"() {
+        when:
+        def pattern = new PRegEx.CharRange('a', 'z').oneOrMore()
+
+        then:
+        pattern.toRegex() == '([a-z])+'
+    }
+
     // MultiRange tests
 
     def "MultiRange should create pattern from single range"() {
