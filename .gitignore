@@ -13,3 +13,5 @@ results
 *.nf-test*
 *.nf-test.log
 
+# Ignore IDE folders/files
+.vscode
