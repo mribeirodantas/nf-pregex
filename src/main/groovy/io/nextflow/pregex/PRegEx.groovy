@@ -358,6 +358,20 @@ abstract class PRegEx {
             this.end = end
         }
 
+        CharRange(String start, String end) {
+            if (start == null || start.length() != 1) {
+                throw new IllegalArgumentException("Start must be a single character string")
+            }
+            if (end == null || end.length() != 1) {
+                throw new IllegalArgumentException("End must be a single character string")
+            }
+            this.start = start.charAt(0)
+            this.end = end.charAt(0)
+            if (this.start > this.end) {
+                throw new IllegalArgumentException("Start character '${this.start}' must be less than or equal to end character '${this.end}'")
+            }
+        }
+
         @Override
         String toRegex() {
             // Escape special characters if needed
@@ -396,6 +410,31 @@ abstract class PRegEx {
                 throw new IllegalArgumentException("At least one CharRange is required")
             }
             this.ranges = ranges
+        }
+
+        MultiRange(String rangeSpec) {
+            if (rangeSpec == null || rangeSpec.isEmpty()) {
+                throw new IllegalArgumentException("Range specification cannot be null or empty")
+            }
+            this.ranges = parseRangeSpec(rangeSpec)
+            if (this.ranges.isEmpty()) {
+                throw new IllegalArgumentException("At least one valid range is required")
+            }
+        }
+
+        private static List<CharRange> parseRangeSpec(String spec) {
+            List<CharRange> ranges = new ArrayList<>()
+            // Match patterns like 'a'-'z', 'A'-'Z', '0'-'9'
+            def pattern = ~/['"](.)['"]\s*-\s*['"](.)['"]/
+            def matcher = pattern.matcher(spec)
+            
+            while (matcher.find()) {
+                def start = matcher.group(1)
+                def end = matcher.group(2)
+                ranges.add(new CharRange(start, end))
+            }
+            
+            return ranges
         }
 
         @Override

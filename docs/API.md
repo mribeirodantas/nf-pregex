@@ -353,91 +353,97 @@ NotCharClass("0-9")               // → [^0\-9]
 
 ---
 
-### CharRange(char, char)
+### CharRange(String, String) or CharRange(char, char)
 
 Matches a range of characters using standard regex character class syntax.
 
 **Syntax:**
 ```groovy
-CharRange(char start, char end)
+CharRange(String start, String end)  // Recommended: cleaner syntax
+CharRange(char start, char end)      // Alternative: explicit char type
 ```
 
 **Parameters:**
-- `start` - Starting character of the range (inclusive)
-- `end` - Ending character of the range (inclusive)
+- `start` - Starting character of the range (inclusive), either as single-character String or char
+- `end` - Ending character of the range (inclusive), either as single-character String or char
 
 **Returns:** PRegEx pattern object
 
 **Examples:**
 ```groovy
+// Recommended syntax (String constructor)
+CharRange('a', 'z')    // → [a-z]
+CharRange('A', 'Z')    // → [A-Z]
+CharRange('0', '9')    // → [0-9]
+CharRange('a', 'f')    // → [a-f] (hex digits)
+
+// Alternative syntax (char constructor)
 CharRange('a' as char, 'z' as char)    // → [a-z]
 CharRange('A' as char, 'Z' as char)    // → [A-Z]
-CharRange('0' as char, '9' as char)    // → [0-9]
-CharRange('a' as char, 'f' as char)    // → [a-f] (hex digits)
 ```
 
 **Validation:**
 - Throws `IllegalArgumentException` if start > end
+- For String constructor: throws `IllegalArgumentException` if strings are not single characters
 - Start character must be less than or equal to end character in ASCII value
 
 **Usage with Quantifiers:**
 ```groovy
-CharRange('a' as char, 'z' as char).oneOrMore()       // → ([a-z])+
-CharRange('0' as char, '9' as char).exactly(3)        // → ([0-9]){3}
-CharRange('A' as char, 'F' as char).range(2, 4)       // → ([A-F]){2,4}
+CharRange('a', 'z').oneOrMore()       // → ([a-z])+
+CharRange('0', '9').exactly(3)        // → ([0-9]){3}
+CharRange('A', 'F').range(2, 4)       // → ([A-F]){2,4}
 ```
 
 **Notes:**
 - More concise than CharClass for ranges
+- String constructor provides cleaner API without type casting
 - Produces standard regex syntax: `[start-end]`
 - Works seamlessly with all quantifiers and combinators
 
 ---
 
-### MultiRange(List<CharRange>)
+### MultiRange(String) or MultiRange(List<CharRange>)
 
 Combines multiple CharRange patterns into a single character class for efficient matching.
 
 **Syntax:**
 ```groovy
-MultiRange(List<CharRange> ranges)
+MultiRange(String rangeSpec)           // Recommended: cleaner syntax
+MultiRange(List<CharRange> ranges)     // Alternative: explicit CharRange objects
 ```
 
 **Parameters:**
+- `rangeSpec` - String specification of ranges in format `'a'-'z', 'A'-'Z', '0'-'9'` (single or double quotes)
 - `ranges` - List of CharRange patterns to combine (at least one required)
 
 **Returns:** PRegEx pattern object
 
 **Examples:**
 ```groovy
-// Lowercase letters
-def lower = new CharRange('a' as char, 'z' as char)
-MultiRange([lower])               // → [a-z]
+// Recommended syntax (String constructor)
+MultiRange("'a'-'z'")                           // → [a-z]
+MultiRange("'a'-'z', 'A'-'Z'")                  // → [a-zA-Z]
+MultiRange("'a'-'z', 'A'-'Z', '0'-'9'")         // → [a-zA-Z0-9]
+MultiRange("'a'-'f', 'A'-'F', '0'-'9'")         // → [a-fA-F0-9] (hex)
 
-// Alphanumeric (any case)
-def lower = new CharRange('a' as char, 'z' as char)
-def upper = new CharRange('A' as char, 'Z' as char)
-def digits = new CharRange('0' as char, '9' as char)
-MultiRange([lower, upper, digits]) // → [a-zA-Z0-9]
+// Also supports double quotes
+MultiRange('"a"-"z", "A"-"Z"')                  // → [a-zA-Z]
 
-// Hexadecimal digits
-def hexLower = new CharRange('a' as char, 'f' as char)
-def hexUpper = new CharRange('A' as char, 'F' as char)
-def digits = new CharRange('0' as char, '9' as char)
-MultiRange([hexLower, hexUpper, digits]) // → [a-fA-F0-9]
+// Alternative syntax (List constructor)
+def lower = new CharRange('a', 'z')
+def upper = new CharRange('A', 'Z')
+def digits = new CharRange('0', '9')
+MultiRange([lower, upper, digits])              // → [a-zA-Z0-9]
 ```
 
 **Validation:**
-- Throws `IllegalArgumentException` if ranges list is null or empty
-- At least one CharRange is required
+- String constructor: throws `IllegalArgumentException` if spec is null, empty, or contains no valid ranges
+- List constructor: throws `IllegalArgumentException` if ranges list is null or empty
+- At least one valid range is required
 
 **Usage with Quantifiers:**
 ```groovy
-def alphanumeric = MultiRange([
-    new CharRange('a' as char, 'z' as char),
-    new CharRange('A' as char, 'Z' as char),
-    new CharRange('0' as char, '9' as char)
-])
+def alphanumeric = MultiRange("'a'-'z', 'A'-'Z', '0'-'9'")
 
 alphanumeric.oneOrMore()          // → ([a-zA-Z0-9])+
 alphanumeric.exactly(5)           // → ([a-zA-Z0-9]){5}
@@ -447,11 +453,8 @@ alphanumeric.range(3, 8)          // → ([a-zA-Z0-9]){3,8}
 **Combining with Other Patterns:**
 ```groovy
 // Username pattern: letters followed by digits
-def letters = MultiRange([
-    new CharRange('a' as char, 'z' as char),
-    new CharRange('A' as char, 'Z' as char)
-])
-def digits = new CharRange('0' as char, '9' as char)
+def letters = MultiRange("'a'-'z', 'A'-'Z'")
+def digits = CharRange('0', '9')
 
 Sequence([
     letters.oneOrMore(),
@@ -463,27 +466,23 @@ Sequence([
 ```groovy
 // Match plate well identifiers (A01-H12)
 Sequence([
-    CharRange('A' as char, 'H' as char),
-    CharRange('0' as char, '9' as char).exactly(2)
+    CharRange('A', 'H'),
+    CharRange('0', '9').exactly(2)
 ])                                // → [A-H]([0-9]){2}
 
 // Match custom alphanumeric codes (ABC-1234)
 Sequence([
-    MultiRange([
-        new CharRange('A' as char, 'Z' as char),
-        new CharRange('0' as char, '9' as char)
-    ]).exactly(3),
+    MultiRange("'A'-'Z', '0'-'9'").exactly(3),
     Literal("-"),
-    MultiRange([
-        new CharRange('a' as char, 'z' as char),
-        new CharRange('0' as char, '9' as char)
-    ]).exactly(4)
+    MultiRange("'a'-'z', '0'-'9'").exactly(4)
 ])                                // → ([A-Z0-9]){3}-([a-z0-9]){4}
 ```
 
-**Benefits:**
+**Notes:**
+- String constructor provides the cleanest syntax for most use cases
 - More efficient than multiple Either patterns for character classes
 - Produces cleaner, more readable regex
+- String format supports both single and double quotes
 - Standard regex syntax understood by all regex engines
 - Excellent for validating identifiers, codes, and custom formats
 
