@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - PRegExExtensionTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>PRegExExtensionTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/io.nextflow.pregex.html">io.nextflow.pregex</a> &gt; PRegExExtensionTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">19</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">2</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.681s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">89%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a href="#">Failed tests</a>
+</li>
+<li>
+<a href="#">Tests</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="Chaining with built-in methods should work"></a>
+<h3 class="failures">Chaining with built-in methods should work</h3>
+<span class="code">
+<pre>Condition not satisfied:
+
+pattern.toRegex() == 'sample\\d'
+|       |         |
+|       samp\le\d false
+samp\le\d         1 difference (88% similarity)
+                  samp(\\)le\\d
+                  samp(-~)le\\d
+
+	at io.nextflow.pregex.PRegExExtensionTest.Chaining with built-in methods should work(PRegExExtensionTest.groovy:177)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="Sequence function should create Sequence pattern"></a>
+<h3 class="failures">Sequence function should create Sequence pattern</h3>
+<span class="code">
+<pre>Condition not satisfied:
+
+pattern.toRegex() == 'hello world'
+|       |         |
+|       |         false
+|       |         3 differences (78% similarity)
+|       |         he(\\)l(\\)lo wor(\\)ld
+|       |         he(-~)l(-~)lo wor(-~)ld
+|       he\l\lo wor\ld
+he\l\lo wor\ld
+
+	at io.nextflow.pregex.PRegExExtensionTest.Sequence function should create Sequence pattern(PRegExExtensionTest.groovy:91)
+</pre>
+</span>
+</div>
+</div>
+<div class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">AnyChar function should create AnyChar pattern</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">AtLeast function should create AtLeast pattern</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">Chaining with built-in methods should work</td>
+<td class="failures">0.008s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="success">CharClass function should create CharClass pattern</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Complex composition should work</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Digit function should create Digit pattern</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Either function should create Either pattern</td>
+<td class="success">0.489s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">EndOfLine function should create EndOfLine pattern</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Exactly function should create Exactly pattern</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Literal function should create Literal pattern</td>
+<td class="success">0.012s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">NotCharClass function should create negated CharClass pattern</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">OneOrMore function should create OneOrMore pattern</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Optional function should create Optional pattern</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Range function should create Range pattern</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">Sequence function should create Sequence pattern</td>
+<td class="failures">0.125s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="success">StartOfLine function should create StartOfLine pattern</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Whitespace function should create Whitespace pattern</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">WordChar function should create WordChar pattern</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">ZeroOrMore function should create ZeroOrMore pattern</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 8.14</a> at Dec 26, 2025, 2:39:57 AM</p>
+</div>
+</div>
+</body>
+</html>

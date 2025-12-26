@@ -1,0 +1,10 @@
+Testing the regex pattern: [\\.*+?^${}()\[\]|-]
+
+In a character class:
+- | doesn't need escaping
+- - at the end doesn't need escaping  
+- BUT the pattern itself is matching single characters
+
+The issue: The regex /([\\.*+?^${}()\[\]|-])/ creates a character class that matches ANY of these characters: \ . * + ? ^ $ { } ( ) [ ] | -
+
+So "hello" would only match if it contained those characters, which it doesn't!
