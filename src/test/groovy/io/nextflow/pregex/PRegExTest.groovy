@@ -529,4 +529,105 @@ class PRegExTest extends Specification {
         then:
         pattern.toRegex() == '([a-zA-Z])+([0-9]){3}'
     }
+
+    // MultiRange String constructor tests
+
+    def "MultiRange String constructor should create pattern from single range"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'z'")
+
+        then:
+        pattern.toRegex() == '[a-z]'
+    }
+
+    def "MultiRange String constructor should combine two ranges"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'z', 'A'-'Z'")
+
+        then:
+        pattern.toRegex() == '[a-zA-Z]'
+    }
+
+    def "MultiRange String constructor should combine three ranges (alphanumeric)"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'z', 'A'-'Z', '0'-'9'")
+
+        then:
+        pattern.toRegex() == '[a-zA-Z0-9]'
+    }
+
+    def "MultiRange String constructor should handle double quotes"() {
+        when:
+        def pattern = new PRegEx.MultiRange('"a"-"z", "A"-"Z"')
+
+        then:
+        pattern.toRegex() == '[a-zA-Z]'
+    }
+
+    def "MultiRange String constructor should handle mixed quotes"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'z', \"A\"-\"Z\"")
+
+        then:
+        pattern.toRegex() == '[a-zA-Z]'
+    }
+
+    def "MultiRange String constructor should handle spaces around dashes"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a' - 'z', 'A' - 'Z'")
+
+        then:
+        pattern.toRegex() == '[a-zA-Z]'
+    }
+
+    def "MultiRange String constructor should handle hexadecimal ranges"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'f', 'A'-'F', '0'-'9'")
+
+        then:
+        pattern.toRegex() == '[a-fA-F0-9]'
+    }
+
+    def "MultiRange String constructor should throw exception for empty string"() {
+        when:
+        new PRegEx.MultiRange("")
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("cannot be null or empty")
+    }
+
+    def "MultiRange String constructor should throw exception for null"() {
+        when:
+        new PRegEx.MultiRange((String) null)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("cannot be null or empty")
+    }
+
+    def "MultiRange String constructor should throw exception for invalid format"() {
+        when:
+        new PRegEx.MultiRange("abc")
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains("At least one valid range is required")
+    }
+
+    def "MultiRange String constructor should work with quantifiers"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'z', 'A'-'Z'").oneOrMore()
+
+        then:
+        pattern.toRegex() == '([a-zA-Z])+'
+    }
+
+    def "MultiRange String constructor should work with exactly quantifier"() {
+        when:
+        def pattern = new PRegEx.MultiRange("'a'-'z', 'A'-'Z', '0'-'9'").exactly(5)
+
+        then:
+        pattern.toRegex() == '([a-zA-Z0-9]){5}'
+    }
 }
