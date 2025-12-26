@@ -13,7 +13,7 @@ include { Either; Literal; Optional; OneOrMore; Digit; WordChar; Sequence } from
 workflow {
     
     // Example 1: Simple alternation - match either "foo" or "bar"
-    def pattern1 = Either("foo", "bar")
+    def pattern1 = Either(["foo", "bar"])
     println "Pattern 1: ${pattern1}"  // Outputs: (foo|bar)
     
     // Example 2: Literal text with special characters
@@ -21,11 +21,11 @@ workflow {
     println "Pattern 2: ${pattern2}"  // Outputs: file\.txt
     
     // Example 3: Optional pattern - match "color" or "colour"
-    def pattern3 = Sequence(
+    def pattern3 = Sequence([
         Literal("colo"),
         Optional(Literal("u")),
         Literal("r")
-    )
+    ])
     println "Pattern 3: ${pattern3}"  // Outputs: colo(u)?r
     
     // Example 4: Digit patterns - match numbers
@@ -33,13 +33,13 @@ workflow {
     println "Pattern 4: ${pattern4}"  // Outputs: (\d)+
     
     // Example 5: Matching sample IDs like "sample123_R1.fastq.gz"
-    def samplePattern = Sequence(
+    def samplePattern = Sequence([
         Literal("sample"),
         OneOrMore(Digit()),
         Literal("_"),
-        Either("R1", "R2"),
+        Either(["R1", "R2"]),
         Literal(".fastq.gz")
-    )
+    ])
     println "Sample pattern: ${samplePattern}"
     // Outputs: sample(\d)+_(R1|R2)\.fastq\.gz
     
@@ -58,13 +58,13 @@ workflow {
         .view { "Matched: $it" }
     
     // Example 7: Email-like pattern
-    def emailPattern = Sequence(
+    def emailPattern = Sequence([
         OneOrMore(WordChar()),
         Literal("@"),
         OneOrMore(WordChar()),
         Literal("."),
-        Either("com", "org", "edu")
-    )
+        Either(["com", "org", "edu"])
+    ])
     println "Email pattern: ${emailPattern}"
     
     // Example 8: Using method chaining
@@ -72,12 +72,12 @@ workflow {
     println "Chained pattern: ${chainedPattern}"  // Outputs: (test)?
     
     // Example 9: Complex pattern with multiple quantifiers
-    def complexPattern = Sequence(
+    def complexPattern = Sequence([
         Literal("prefix_"),
         OneOrMore(WordChar()),
         Literal("_"),
         Digit().exactly(3),
         Optional(Literal("_final"))
-    )
+    ])
     println "Complex pattern: ${complexPattern}"
 }

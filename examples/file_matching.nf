@@ -24,13 +24,13 @@ workflow {
     // ========================================
     
     // Pattern: sample_name_R1.fastq.gz or sample_name_R2.fastq.gz
-    def fastqPattern = Sequence(
+    def fastqPattern = Sequence([
         OneOrMore(WordChar()),         // sample name
         Literal("_"),
-        Either("R1", "R2"),            // read direction
+        Either(["R1", "R2"]),          // read direction
         Literal(".fastq"),
         Optional(Literal(".gz"))       // optional compression
-    )
+    ])
     
     println "FASTQ Pattern: ${fastqPattern}"
     
@@ -54,11 +54,11 @@ workflow {
     // Example 2: BAM/SAM file pattern
     // ========================================
     
-    def bamPattern = Sequence(
+    def bamPattern = Sequence([
         OneOrMore(WordChar()),         // sample name
         Literal("."),
-        Either("bam", "sam")           // file type
-    )
+        Either(["bam", "sam"])         // file type
+    ])
     
     println "\n\nBAM/SAM Pattern: ${bamPattern}"
     
@@ -68,15 +68,15 @@ workflow {
     // ========================================
     
     // Pattern: SampleID format like "S001_T1_R1" or "S001_C1_R2"
-    def sampleIdPattern = Sequence(
+    def sampleIdPattern = Sequence([
         Literal("S"),
         Digit().exactly(3),             // 3-digit sample number
         Literal("_"),
-        Either("T", "C"),               // Treatment or Control
+        Either(["T", "C"]),             // Treatment or Control
         Digit(),                        // replicate number
         Literal("_"),
-        Either("R1", "R2")              // read pair
-    )
+        Either(["R1", "R2"])            // read pair
+    ])
     
     println "Sample ID Pattern: ${sampleIdPattern}"
     
@@ -100,11 +100,11 @@ workflow {
     // ========================================
     
     // Create a pattern for paired-end reads
-    def pairedEndPattern = Sequence(
+    def pairedEndPattern = Sequence([
         Literal("*_"),
-        Either("R1", "R2"),
+        Either(["R1", "R2"]),
         Literal(".fastq.gz")
-    )
+    ])
     
     println "\n\nPaired-end pattern for fromFilePairs: ${pairedEndPattern}"
     println "Usage: channel.fromFilePairs('data/*_{R1,R2}.fastq.gz')"
@@ -114,17 +114,17 @@ workflow {
     // Example 5: VCF file versioning
     // ========================================
     
-    def vcfPattern = Sequence(
+    def vcfPattern = Sequence([
         OneOrMore(WordChar()),         // base name
         Literal("."),
-        Optional(Sequence(
+        Optional(Sequence([
             Literal("v"),
             OneOrMore(Digit()),
             Literal(".")
-        )),                            // optional version
+        ])),                           // optional version
         Literal("vcf"),
         Optional(Literal(".gz"))       // optional compression
-    )
+    ])
     
     println "\n\nVCF Pattern: ${vcfPattern}"
     

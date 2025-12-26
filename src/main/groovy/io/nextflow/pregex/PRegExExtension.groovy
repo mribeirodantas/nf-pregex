@@ -14,7 +14,6 @@ import nextflow.plugin.extension.PluginExtensionPoint
  * 
  * @author Seqera AI
  */
-@CompileStatic
 class PRegExExtension extends PluginExtensionPoint {
 
     @Override
@@ -25,17 +24,18 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches any of the provided alternatives.
      * 
-     * Example: Either("foo", "bar", "baz") produces "(foo|bar|baz)"
+     * Example: Either(["foo", "bar", "baz"]) produces "(foo|bar|baz)"
      * 
-     * @param alternatives Variable number of string alternatives
+     * @param alternatives List of string alternatives
      * @return PRegEx pattern object
      */
     @Function
-    PRegEx Either(String... alternatives) {
-        if (!alternatives || alternatives.length == 0) {
+    PRegEx Either(List alternatives) {
+        if (!alternatives || alternatives.isEmpty()) {
             throw new IllegalArgumentException("Either requires at least one alternative")
         }
-        return new PRegEx.Either(alternatives as List<String>)
+        def stringList = alternatives.collect { it.toString() }
+        return new PRegEx.Either(stringList)
     }
 
     /**
@@ -136,13 +136,13 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches a sequence of patterns in order.
      * 
-     * Example: Sequence(Literal("hello"), Literal(" "), Literal("world"))
+     * Example: Sequence([Literal("hello"), Literal(" "), Literal("world")])
      * 
-     * @param patterns Variable number of patterns to match in sequence
+     * @param patterns List of patterns to match in sequence
      * @return PRegEx pattern object
      */
     @Function
-    PRegEx Sequence(PRegEx... patterns) {
+    PRegEx Sequence(List patterns) {
         return new PRegEx.Sequence(patterns as List<PRegEx>)
     }
 

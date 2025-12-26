@@ -17,7 +17,7 @@ class PRegExExtensionTest extends Specification {
 
     def "Either function should create Either pattern"() {
         when:
-        def pattern = extension.Either('foo', 'bar')
+        def pattern = extension.Either(['foo', 'bar'])
 
         then:
         pattern.toRegex() == '(foo|bar)'
@@ -81,11 +81,11 @@ class PRegExExtensionTest extends Specification {
 
     def "Sequence function should create Sequence pattern"() {
         when:
-        def pattern = extension.Sequence(
+        def pattern = extension.Sequence([
             extension.Literal('hello'),
             extension.Literal(' '),
             extension.Literal('world')
-        )
+        ])
 
         then:
         pattern.toRegex() == 'hello world'
@@ -158,12 +158,12 @@ class PRegExExtensionTest extends Specification {
     def "Complex composition should work"() {
         when:
         // Pattern for matching sample IDs like: sample_R1.fastq.gz or sample_R2.fastq.gz
-        def pattern = extension.Sequence(
+        def pattern = extension.Sequence([
             extension.OneOrMore(extension.WordChar()),
             extension.Literal('_'),
-            extension.Either('R1', 'R2'),
+            extension.Either(['R1', 'R2']),
             extension.Literal('.fastq.gz')
-        )
+        ])
 
         then:
         pattern.toRegex() == '(\\w)+_(R1|R2)\\.fastq\\.gz'
