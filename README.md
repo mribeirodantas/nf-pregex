@@ -284,6 +284,26 @@ Matches any character NOT in the specified set.
 NotCharClass("abc")  // → [^abc]
 ```
 
+#### CharRange(char, char)
+Matches a range of characters.
+
+```groovy
+CharRange('a' as char, 'z' as char)  // → [a-z]
+CharRange('A' as char, 'Z' as char)  // → [A-Z]
+CharRange('0' as char, '9' as char)  // → [0-9]
+```
+
+#### MultiRange(List)
+Combines multiple character ranges into a single character class.
+
+```groovy
+def alphanumeric = MultiRange([
+    CharRange('a' as char, 'z' as char),
+    CharRange('A' as char, 'Z' as char),
+    CharRange('0' as char, '9' as char)
+])  // → [a-zA-Z0-9]
+```
+
 ### Anchors
 
 #### StartOfLine()
@@ -384,6 +404,33 @@ def vcfPattern = Sequence([
     Optional(Literal(".gz"))
 ])
 // Matches: variants.vcf, variants.v1.vcf.gz, etc.
+```
+
+### Custom Identifier with Character Ranges
+```groovy
+include { Sequence; CharRange; MultiRange; Literal } from 'plugin/nf-pregex'
+
+// Match plate well identifiers like A01, B12, H08
+def wellPattern = Sequence([
+    CharRange('A' as char, 'H' as char),     // Row: A-H
+    CharRange('0' as char, '9' as char).exactly(2)  // Column: 00-99
+])
+// → [A-H]([0-9]){2}
+
+// Match custom alphanumeric codes
+def codePattern = Sequence([
+    MultiRange([
+        CharRange('A' as char, 'Z' as char),
+        CharRange('0' as char, '9' as char)
+    ]).exactly(3),
+    Literal("-"),
+    MultiRange([
+        CharRange('a' as char, 'z' as char),
+        CharRange('0' as char, '9' as char)
+    ]).exactly(4)
+])
+// → ([A-Z0-9]){3}-([a-z0-9]){4}
+// Matches: A1B-x9y2, 3XZ-test, etc.
 ```
 
 ## Benefits
