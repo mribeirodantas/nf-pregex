@@ -243,4 +243,218 @@ class PRegExExtension extends PluginExtensionPoint {
     PRegEx NotCharClass(String chars) {
         return new PRegEx.CharClass(chars, true)
     }
+
+    /**
+     * Creates a character range pattern matching characters from start to end.
+     * 
+     * Example: CharRange('a', 'z') produces "[a-z]"
+     * Example: CharRange('0', '9') produces "[0-9]"
+     * 
+     * @param start The starting character (single character string)
+     * @param end The ending character (single character string)
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx CharRange(String start, String end) {
+        return new PRegEx.CharRange(start, end)
+    }
+
+    /**
+     * Creates a multi-range pattern combining multiple character ranges.
+     * 
+     * Example: MultiRange("'a'-'z', 'A'-'Z', '0'-'9'") produces "[a-zA-Z0-9]"
+     * Example: MultiRange("'a'-'f', 'A'-'F', '0'-'9'") produces "[a-fA-F0-9]"
+     * 
+     * @param rangeSpec String specification of ranges in format "'start'-'end', ..."
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx MultiRange(String rangeSpec) {
+        return new PRegEx.MultiRange(rangeSpec)
+    }
+
+    // ========== Bioinformatics Patterns ==========
+
+    /**
+     * Matches a DNA sequence (one or more ACGT nucleotides, case-insensitive).
+     * 
+     * Example matches: ACGT, acgt, ATCGATCG
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx DNASequence() {
+        return BioinformaticsPatterns.DNASequence()
+    }
+
+    /**
+     * Matches a strict DNA sequence (uppercase ACGT only).
+     * 
+     * Example matches: ACGT, ATCGATCG
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx StrictDNASequence() {
+        return BioinformaticsPatterns.StrictDNASequence()
+    }
+
+    /**
+     * Matches a DNA sequence with IUPAC ambiguity codes.
+     * Includes: A, C, G, T, R, Y, S, W, K, M, B, D, H, V, N
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx DNASequenceWithAmbiguity() {
+        return BioinformaticsPatterns.DNASequenceWithAmbiguity()
+    }
+
+    /**
+     * Matches a protein sequence (20 standard amino acids, case-insensitive).
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx ProteinSequence() {
+        return BioinformaticsPatterns.ProteinSequence()
+    }
+
+    /**
+     * Matches a strict protein sequence (uppercase amino acids only).
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx StrictProteinSequence() {
+        return BioinformaticsPatterns.StrictProteinSequence()
+    }
+
+    /**
+     * Matches a protein sequence with ambiguity codes (B, Z, X, *).
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx ProteinSequenceWithAmbiguity() {
+        return BioinformaticsPatterns.ProteinSequenceWithAmbiguity()
+    }
+
+    /**
+     * Matches Phred quality scores (Phred+33 encoding).
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx PhredQuality() {
+        return BioinformaticsPatterns.PhredQuality()
+    }
+
+    /**
+     * Matches chromosome names (chr1-22, chrX, chrY, chrM, with/without 'chr' prefix).
+     * 
+     * Example matches: chr1, 22, chrX, chrM
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx Chromosome() {
+        return BioinformaticsPatterns.Chromosome()
+    }
+
+    /**
+     * Matches chromosome names requiring 'chr' prefix.
+     * 
+     * Example matches: chr1, chr22, chrX, chrY, chrM
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx StrictChromosome() {
+        return BioinformaticsPatterns.StrictChromosome()
+    }
+
+    /**
+     * Matches read pair identifiers (_R1, _R2, _1, _2, .R1, .R2, .1, .2).
+     * 
+     * Example matches: _R1, _R2, .1, .2
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx ReadPair() {
+        return BioinformaticsPatterns.ReadPair()
+    }
+
+    /**
+     * Matches FASTQ file extensions (.fastq, .fq, with optional .gz).
+     * 
+     * Example matches: .fastq, .fq, .fastq.gz, .fq.gz
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx FastqExtension() {
+        return BioinformaticsPatterns.FastqExtension()
+    }
+
+    /**
+     * Matches VCF file extensions (.vcf, .bcf, with optional .gz).
+     * 
+     * Example matches: .vcf, .bcf, .vcf.gz, .bcf.gz
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx VcfExtension() {
+        return BioinformaticsPatterns.VcfExtension()
+    }
+
+    /**
+     * Matches alignment file extensions (.bam, .sam, .cram).
+     * 
+     * Example matches: .bam, .sam, .cram
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx AlignmentExtension() {
+        return BioinformaticsPatterns.AlignmentExtension()
+    }
+
+    /**
+     * Matches BED file extensions (.bed, .bed.gz).
+     * 
+     * Example matches: .bed, .bed.gz
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx BedExtension() {
+        return BioinformaticsPatterns.BedExtension()
+    }
+
+    /**
+     * Matches GFF/GTF file extensions (.gff, .gff3, .gtf, with optional .gz).
+     * 
+     * Example matches: .gff, .gtf, .gff.gz, .gff3.gz
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx GffGtfExtension() {
+        return BioinformaticsPatterns.GffGtfExtension()
+    }
+
+    /**
+     * Matches FASTA file extensions (.fa, .fasta, .fna, with optional .gz).
+     * 
+     * Example matches: .fa, .fasta, .fna, .fa.gz
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx FastaExtension() {
+        return BioinformaticsPatterns.FastaExtension()
+    }
 }
