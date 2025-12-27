@@ -242,12 +242,14 @@ workflow {
             tuple(file_meta, fastq_path)
         }
     
-    main:
     // Run parsing and QC process
     PARSE_AND_QC(reads_ch)
-    
-    // Display completion message
-    complete:
+}
+
+/*
+ * Workflow completion handler
+ */
+workflow.onComplete {
     def status_icon = workflow.success ? '✅ SUCCESS' : '❌ FAILED'
     log.info """
     
