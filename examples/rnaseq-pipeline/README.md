@@ -9,9 +9,9 @@ This example showcases how nf-pregex transforms complex regex patterns into read
 ## Pipeline Steps
 
 1. **Quality Control** - FastQC analysis of raw reads
-2. **Trimming** - Adapter and quality trimming with Trimmomatic
-3. **Alignment** - Read alignment with STAR
-4. **Quantification** - Feature counting with featureCounts
+2. **Salmon Index** - Build transcriptome index for quantification
+3. **Salmon Quant** - Transcript-level quantification using quasi-mapping
+4. **MultiQC** - Aggregate QC reports from FastQC and Salmon
 
 ## Key Benefits Demonstrated
 
