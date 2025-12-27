@@ -59,7 +59,7 @@ def illuminaPattern = Sequence(
 ✅ **Instantly readable** - Anyone can understand this  
 ✅ **Self-documenting** - Comments explain *why*, not *what*  
 ✅ **Automatic escaping** - `Literal(".")` handles escaping  
-✅ **Named captures** - `m.group("lane")` vs `m[0][3]`  
+✅ **Clear captures** - Documented groups: `m[0][3]` is lane (group 3)  
 ✅ **Easy to modify** - Add fields without regex expertise  
 ✅ **Maintainable** - Future you will thank present you
 
@@ -70,7 +70,7 @@ This minimal example demonstrates **real-world filename parsing** with both trad
 1. **Side-by-side comparison** - See both approaches in working code
 2. **Actual Illumina format** - The exact pattern from Nextflow training
 3. **Metadata extraction** - Parse all components from the filename
-4. **Named capture groups** - Access fields by name, not index
+4. **Capture groups** - Extract fields with clear, documented patterns
 5. **JSON output** - Extracted metadata saved for downstream use
 
 ## Why This Matters
@@ -152,37 +152,37 @@ def parseFilenameTraditional(fastq_path) {
 ```groovy
 def parseFilenameWithPregex(fastq_path) {
     // Crystal clear! 😊
-    def illuminaPattern = Sequence(
-        OneOrMore(WordChar()).capture("sample"),      // Sample name
+    def illuminaPattern = Sequence([
+        OneOrMore(WordChar()).group(),          // Sample name (group 1)
         Literal("_S"),
-        OneOrMore(Digit()).capture("sample_num"),     // Sample number  
+        OneOrMore(Digit()).group(),             // Sample number (group 2)
         Literal("_L"),
-        Digit().exactly(3).capture("lane"),           // Lane (3 digits)
+        Digit().exactly(3).group(),             // Lane (group 3)
         Literal("_"),
-        Either(["R1", "R2"]).capture("read"),         // Read direction
+        Either(["R1", "R2"]).group(),           // Read direction (group 4)
         Literal("_"),
-        Digit().exactly(3).capture("chunk"),          // Chunk (3 digits)
+        Digit().exactly(3).group(),             // Chunk (group 5)
         Literal(".fastq"),
         Optional(Literal(".gz"))
-    )
+    ])
     
     def m = (fastq_path.name =~ illuminaPattern)
     
     if (!m) return null
     
     return [
-        sample_name: m.group("sample"),      // Named access!
-        sample_num: m.group("sample_num").toInteger(),
-        lane: m.group("lane"),
-        read: m.group("read"),
-        chunk: m.group("chunk")
+        sample_name: m[0][1],                   // Group 1
+        sample_num: m[0][2].toInteger(),        // Group 2
+        lane: m[0][3],                          // Group 3
+        read: m[0][4],                          // Group 4
+        chunk: m[0][5]                          // Group 5
     ]
 }
 ```
 
 **Benefits:**
 - Each line has a clear purpose
-- Named capture groups (no counting!)
+- Documented capture groups (no guessing!)
 - Automatic escaping (`Literal(".")`)
 - Comments explain intent, not mechanics
 - Easy to add new fields
@@ -257,7 +257,7 @@ def lane = parts[2].replace("L", "")
 |--------|------------------|----------------|-----------|
 | **Readable** | ❌ Cryptic | ⚠️ Fragile | ✅ Clear |
 | **Validates** | ✅ Yes | ❌ No | ✅ Yes |
-| **Named captures** | ⚠️ By index | ❌ No | ✅ By name |
+| **Documented captures** | ❌ By index | ❌ No | ✅ Inline docs |
 | **Handles edge cases** | ⚠️ If correct | ❌ No | ✅ Yes |
 | **Maintainable** | ❌ Expertise needed | ⚠️ Breaks easily | ✅ Easy |
 | **Self-documenting** | ❌ Needs comments | ❌ Needs comments | ✅ Inherent |

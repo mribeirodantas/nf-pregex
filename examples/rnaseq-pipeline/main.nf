@@ -104,25 +104,25 @@ def parseFilenameTraditional(fastq_path) {
  */
 def parseFilenameWithPregex(fastq_path) {
     // Build a readable pattern using nf-pregex
-    def illuminaPattern = Sequence(
-        // Sample name: one or more word characters
-        OneOrMore(WordChar()).capture("sample"),
+    def illuminaPattern = Sequence([
+        // Sample name: one or more word characters (capture group 1)
+        OneOrMore(WordChar()).group(),
         Literal("_S"),
-        // Sample number: one or more digits
-        OneOrMore(Digit()).capture("sample_num"),
+        // Sample number: one or more digits (capture group 2)
+        OneOrMore(Digit()).group(),
         Literal("_L"),
-        // Lane: exactly 3 digits
-        Digit().exactly(3).capture("lane"),
+        // Lane: exactly 3 digits (capture group 3)
+        Digit().exactly(3).group(),
         Literal("_"),
-        // Read direction: R1 or R2
-        Either(["R1", "R2"]).capture("read"),
+        // Read direction: R1 or R2 (capture group 4)
+        Either(["R1", "R2"]).group(),
         Literal("_"),
-        // Chunk: exactly 3 digits
-        Digit().exactly(3).capture("chunk"),
+        // Chunk: exactly 3 digits (capture group 5)
+        Digit().exactly(3).group(),
         // Extension: .fastq or .fastq.gz
         Literal(".fastq"),
         Optional(Literal(".gz"))
-    )
+    ])
     
     def m = (fastq_path.name =~ illuminaPattern)
     
@@ -131,11 +131,11 @@ def parseFilenameWithPregex(fastq_path) {
     }
     
     return [
-        sample_name: m.group("sample"),
-        sample_num: m.group("sample_num").toInteger(),
-        lane: m.group("lane"),
-        read: m.group("read"),
-        chunk: m.group("chunk")
+        sample_name: m[0][1],
+        sample_num: m[0][2].toInteger(),
+        lane: m[0][3],
+        read: m[0][4],
+        chunk: m[0][5]
     ]
 }
 
@@ -200,26 +200,26 @@ workflow {
     
     With nf-pregex:
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Sequence(
-        OneOrMore(WordChar()).capture("sample"),     // Clear!
+    Sequence([
+        OneOrMore(WordChar()).group(),          // Sample name - Clear!
         Literal("_S"),
-        OneOrMore(Digit()).capture("sample_num"),    // Readable!
+        OneOrMore(Digit()).group(),             // Sample # - Readable!
         Literal("_L"),
-        Digit().exactly(3).capture("lane"),          // Self-documenting!
+        Digit().exactly(3).group(),             // Lane - Self-documenting!
         Literal("_"),
-        Either(["R1", "R2"]).capture("read"),        // Obvious meaning!
+        Either(["R1", "R2"]).group(),           // Read - Obvious meaning!
         Literal("_"),
-        Digit().exactly(3).capture("chunk"),
+        Digit().exactly(3).group(),             // Chunk
         Literal(".fastq"),
         Optional(Literal(".gz"))
-    )
+    ])
     
     ✅ Benefits:
        • Instantly understandable
        • Automatic escaping
        • Easy to modify
        • Self-documenting
-       • Named capture groups
+       • Capture groups for metadata extraction
     
     Processing files...
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
