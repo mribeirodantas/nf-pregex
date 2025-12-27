@@ -28,6 +28,31 @@ abstract class PRegEx {
     }
 
     /**
+     * Helper method to determine if a pattern string needs grouping when applying quantifiers.
+     * Simple patterns like \d, \w, \s, character classes, etc. don't need grouping.
+     */
+    protected static boolean needsGroupingForQuantifier(String pattern) {
+        // Single character classes (\d, \w, \s, etc.) don't need grouping
+        if (pattern.matches('\\\\[dwsDWS]')) {
+            return false
+        }
+        // Single dot doesn't need grouping
+        if (pattern == '.') {
+            return false
+        }
+        // Character classes like [abc] don't need grouping
+        if (pattern.matches('\\[.+\\]')) {
+            return false
+        }
+        // Escaped single characters like \. don't need grouping
+        if (pattern.matches('\\\\.')) {
+            return false
+        }
+        // Everything else needs grouping for safety
+        return true
+    }
+
+    /**
      * Chains this pattern with another using concatenation.
      * @param other The pattern to concatenate
      * @return A new Sequence pattern
@@ -97,6 +122,15 @@ abstract class PRegEx {
     }
 
     /**
+     * Creates a named capturing group from this pattern.
+     * @param name The name for the capturing group
+     * @return A new NamedGroup pattern
+     */
+    PRegEx namedGroup(String name) {
+        return new NamedGroup(name, this)
+    }
+
+    /**
      * Pattern that matches any of the provided alternatives (OR).
      */
     @CompileStatic
@@ -115,7 +149,7 @@ abstract class PRegEx {
             if (alternatives.size() == 1) {
                 return escapeRegex(alternatives[0])
             }
-            return "(" + alternatives.collect { escapeRegex(it) }.join("|") + ")"
+            return "(?:" + alternatives.collect { escapeRegex(it) }.join("|") + ")"
         }
     }
 
@@ -149,7 +183,7 @@ abstract class PRegEx {
 
         @Override
         String toRegex() {
-            return "(" + pattern.toRegex() + ")?"
+            return "(?:" + pattern.toRegex() + ")?"
         }
     }
 
@@ -166,7 +200,7 @@ abstract class PRegEx {
 
         @Override
         String toRegex() {
-            return "(" + pattern.toRegex() + ")+"
+            return "(?:" + pattern.toRegex() + ")+"
         }
     }
 
@@ -183,7 +217,7 @@ abstract class PRegEx {
 
         @Override
         String toRegex() {
-            return "(" + pattern.toRegex() + ")*"
+            return "(?:" + pattern.toRegex() + ")*"
         }
     }
 
@@ -205,7 +239,16 @@ abstract class PRegEx {
 
         @Override
         String toRegex() {
-            return "(" + pattern.toRegex() + "){" + count + "}"
+            // Check if we need to wrap in a group
+            // Simple patterns like \d, \w, \s, ., or single characters don't need grouping
+            def patternStr = pattern.toRegex()
+            def needsGroup = PRegEx.needsGroupingForQuantifier(patternStr)
+            
+            if (needsGroup) {
+                return "(?:" + patternStr + "){" + count + "}"
+            } else {
+                return patternStr + "{" + count + "}"
+            }
         }
     }
 
@@ -229,7 +272,14 @@ abstract class PRegEx {
 
         @Override
         String toRegex() {
-            return "(" + pattern.toRegex() + "){" + min + "," + max + "}"
+            def patternStr = pattern.toRegex()
+            def needsGroup = PRegEx.needsGroupingForQuantifier(patternStr)
+            
+            if (needsGroup) {
+                return "(?:" + patternStr + "){" + min + "," + max + "}"
+            } else {
+                return patternStr + "{" + min + "," + max + "}"
+            }
         }
     }
 
@@ -251,7 +301,14 @@ abstract class PRegEx {
 
         @Override
         String toRegex() {
-            return "(" + pattern.toRegex() + "){" + min + ",}"
+            def patternStr = pattern.toRegex()
+            def needsGroup = PRegEx.needsGroupingForQuantifier(patternStr)
+            
+            if (needsGroup) {
+                return "(?:" + patternStr + "){" + min + ",}"
+            } else {
+                return patternStr + "{" + min + ",}"
+            }
         }
     }
 
@@ -495,6 +552,56 @@ abstract class PRegEx {
         @Override
         String toRegex() {
             return "(" + pattern.toRegex() + ")"
+        }
+    }
+
+    /**
+     * Pattern that creates a named capturing group.
+     */
+    @CompileStatic
+    static class NamedGroup extends PRegEx {
+        private final String name
+        private final PRegEx pattern
+
+        NamedGroup(String name, PRegEx pattern) {
+            if (!name || !name.matches('[a-zA-Z][a-zA-Z0-9]*')) {
+                throw new IllegalArgumentException("Group name must start with a letter and contain only alphanumeric characters (no underscores)")
+            }
+            this.name = name
+            this.pattern = pattern
+        }
+
+        @Override
+        String toRegex() {
+            return "(?<" + name + ">" + pattern.toRegex() + ")"
+        }
+
+        String getName() {
+            return name
+        }
+    }
+
+    /**
+     * Pattern that creates a backreference to a named group.
+     */
+    @CompileStatic
+    static class NamedBackreference extends PRegEx {
+        private final String name
+
+        NamedBackreference(String name) {
+            if (!name) {
+                throw new IllegalArgumentException("Group name cannot be null or empty")
+            }
+            this.name = name
+        }
+
+        @Override
+        String toRegex() {
+            return "\\k<" + name + ">"
+        }
+
+        String getName() {
+            return name
         }
     }
 

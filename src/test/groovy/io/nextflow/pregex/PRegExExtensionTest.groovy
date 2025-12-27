@@ -20,7 +20,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.Either(['foo', 'bar'])
 
         then:
-        pattern.toRegex() == '(foo|bar)'
+        pattern.toRegex() == '(?:foo|bar)'
     }
 
     def "Literal function should create Literal pattern"() {
@@ -36,7 +36,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.Optional(extension.Literal('s'))
 
         then:
-        pattern.toRegex() == '(s)?'
+        pattern.toRegex() == '(?:s)?'
     }
 
     def "OneOrMore function should create OneOrMore pattern"() {
@@ -44,7 +44,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.OneOrMore(extension.Digit())
 
         then:
-        pattern.toRegex() == '(\\d)+'
+        pattern.toRegex() == '(?:\\d)+'
     }
 
     def "ZeroOrMore function should create ZeroOrMore pattern"() {
@@ -52,7 +52,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.ZeroOrMore(extension.WordChar())
 
         then:
-        pattern.toRegex() == '(\\w)*'
+        pattern.toRegex() == '(?:\\w)*'
     }
 
     def "Exactly function should create Exactly pattern"() {
@@ -60,7 +60,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.Exactly(extension.Digit(), 3)
 
         then:
-        pattern.toRegex() == '(\\d){3}'
+        pattern.toRegex() == '\\d{3}'
     }
 
     def "Range function should create Range pattern"() {
@@ -68,7 +68,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.Range(extension.Digit(), 2, 4)
 
         then:
-        pattern.toRegex() == '(\\d){2,4}'
+        pattern.toRegex() == '\\d{2,4}'
     }
 
     def "AtLeast function should create AtLeast pattern"() {
@@ -76,7 +76,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.AtLeast(extension.Digit(), 1)
 
         then:
-        pattern.toRegex() == '(\\d){1,}'
+        pattern.toRegex() == '\\d{1,}'
     }
 
     def "Sequence function should create Sequence pattern"() {
@@ -166,7 +166,7 @@ class PRegExExtensionTest extends Specification {
         ])
 
         then:
-        pattern.toRegex() == '(\\w)+_(R1|R2)\\.fastq\\.gz'
+        pattern.toRegex() == '(?:\\w)+_(?:R1|R2)\\.fastq\\.gz'
     }
 
     def "Chaining with built-in methods should work"() {
@@ -200,7 +200,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.CharRange('A', 'Z').exactly(3)
 
         then:
-        pattern.toRegex() == '([A-Z]){3}'
+        pattern.toRegex() == '[A-Z]{3}'
     }
 
     def "MultiRange function should create MultiRange pattern"() {
@@ -216,7 +216,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.MultiRange("'a'-'z', 'A'-'Z'").oneOrMore()
 
         then:
-        pattern.toRegex() == '([a-zA-Z])+'
+        pattern.toRegex() == '(?:[a-zA-Z])+'
     }
 
     // Bioinformatics Patterns tests
@@ -226,7 +226,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.DNASequence()
 
         then:
-        pattern.toRegex() == '([ACGTacgt])+'
+        pattern.toRegex() == '(?:[ACGTacgt])+'
     }
 
     def "StrictDNASequence function should create strict DNA pattern"() {
@@ -234,7 +234,7 @@ class PRegExExtensionTest extends Specification {
         def pattern = extension.StrictDNASequence()
 
         then:
-        pattern.toRegex() == '([ACGT])+'
+        pattern.toRegex() == '(?:[ACGT])+'
     }
 
     def "DNASequenceWithAmbiguity function should work"() {
