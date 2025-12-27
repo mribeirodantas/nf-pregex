@@ -13,7 +13,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.Either(['foo', 'bar', 'baz'])
 
         then:
-        pattern.toRegex() == '(foo|bar|baz)'
+        pattern.toRegex() == '(?:foo|bar|baz)'
     }
 
     def "Either with single alternative should not add alternation"() {
@@ -29,7 +29,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.Either(['a.b', 'c*d'])
 
         then:
-        pattern.toRegex() == '(a\\.b|c\\*d)'
+        pattern.toRegex() == '(?:a\\.b|c\\*d)'
     }
 
     def "Literal should escape special regex characters"() {
@@ -53,7 +53,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.Optional(new PRegEx.Literal('test'))
 
         then:
-        pattern.toRegex() == '(test)?'
+        pattern.toRegex() == '(?:test)?'
     }
 
     def "OneOrMore should wrap pattern with ()+"() {
@@ -61,7 +61,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.OneOrMore(new PRegEx.Literal('a'))
 
         then:
-        pattern.toRegex() == '(a)+'
+        pattern.toRegex() == '(?:a)+'
     }
 
     def "ZeroOrMore should wrap pattern with ()*"() {
@@ -69,7 +69,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.ZeroOrMore(new PRegEx.Literal('a'))
 
         then:
-        pattern.toRegex() == '(a)*'
+        pattern.toRegex() == '(?:a)*'
     }
 
     def "Exactly should create {n} quantifier"() {
@@ -77,7 +77,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.Exactly(new PRegEx.Literal('a'), 3)
 
         then:
-        pattern.toRegex() == '(a){3}'
+        pattern.toRegex() == '(?:a){3}'
     }
 
     def "Range should create {min,max} quantifier"() {
@@ -85,7 +85,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.Range(new PRegEx.Literal('a'), 2, 5)
 
         then:
-        pattern.toRegex() == '(a){2,5}'
+        pattern.toRegex() == '(?:a){2,5}'
     }
 
     def "AtLeast should create {n,} quantifier"() {
@@ -93,7 +93,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.AtLeast(new PRegEx.Literal('a'), 2)
 
         then:
-        pattern.toRegex() == '(a){2,}'
+        pattern.toRegex() == '(?:a){2,}'
     }
 
     def "Sequence should concatenate patterns"() {
@@ -200,7 +200,7 @@ class PRegExTest extends Specification {
         ])
 
         then:
-        pattern.toRegex() == '(\\w)+@(\\w)+\\.(\\w){2,3}'
+        pattern.toRegex() == '(?:\\w)+@(?:\\w)+\\.\\w{2,3}'
     }
 
     def "Chained methods should work"() {
@@ -208,7 +208,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.Literal('test').optional()
 
         then:
-        pattern.toRegex() == '(test)?'
+        pattern.toRegex() == '(?:test)?'
     }
 
     def "then() method should concatenate patterns"() {
@@ -338,7 +338,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.CharRange('a' as char, 'z' as char).oneOrMore()
 
         then:
-        pattern.toRegex() == '([a-z])+'
+        pattern.toRegex() == '(?:[a-z])+'
     }
 
     // CharRange String constructor tests
@@ -417,7 +417,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.CharRange('a', 'z').oneOrMore()
 
         then:
-        pattern.toRegex() == '([a-z])+'
+        pattern.toRegex() == '(?:[a-z])+'
     }
 
     // MultiRange tests
@@ -501,7 +501,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.MultiRange([range1, range2]).oneOrMore()
 
         then:
-        pattern.toRegex() == '([a-z0-9])+'
+        pattern.toRegex() == '(?:[a-z0-9])+'
     }
 
     def "MultiRange should work with exactly quantifier"() {
@@ -511,7 +511,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.MultiRange([range1, range2]).exactly(5)
 
         then:
-        pattern.toRegex() == '([a-zA-Z]){5}'
+        pattern.toRegex() == '[a-zA-Z]{5}'
     }
 
     def "CharRange and MultiRange should work in Sequence"() {
@@ -527,7 +527,7 @@ class PRegExTest extends Specification {
         ])
 
         then:
-        pattern.toRegex() == '([a-zA-Z])+([0-9]){3}'
+        pattern.toRegex() == '(?:[a-zA-Z])+[0-9]{3}'
     }
 
     // MultiRange String constructor tests
@@ -620,7 +620,7 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.MultiRange("'a'-'z', 'A'-'Z'").oneOrMore()
 
         then:
-        pattern.toRegex() == '([a-zA-Z])+'
+        pattern.toRegex() == '(?:[a-zA-Z])+'
     }
 
     def "MultiRange String constructor should work with exactly quantifier"() {
@@ -628,6 +628,131 @@ class PRegExTest extends Specification {
         def pattern = new PRegEx.MultiRange("'a'-'z', 'A'-'Z', '0'-'9'").exactly(5)
 
         then:
-        pattern.toRegex() == '([a-zA-Z0-9]){5}'
+        pattern.toRegex() == '[a-zA-Z0-9]{5}'
+    }
+
+    // Named Group Tests
+
+    def "NamedGroup should create named capturing group"() {
+        when:
+        def pattern = new PRegEx.NamedGroup("test", new PRegEx.Digit())
+
+        then:
+        pattern.toRegex() == '(?<test>\\d)'
+        pattern.getName() == 'test'
+    }
+
+    def "NamedGroup should work with complex patterns"() {
+        when:
+        def pattern = new PRegEx.NamedGroup("digits", new PRegEx.OneOrMore(new PRegEx.Digit()))
+
+        then:
+        pattern.toRegex() == '(?<digits>(?:\\d)+)'
+    }
+
+    def "NamedGroup should work in Sequence"() {
+        when:
+        def pattern = new PRegEx.Sequence([
+            new PRegEx.NamedGroup("year", new PRegEx.Digit().exactly(4)),
+            new PRegEx.Literal("-"),
+            new PRegEx.NamedGroup("month", new PRegEx.Digit().exactly(2)),
+            new PRegEx.Literal("-"),
+            new PRegEx.NamedGroup("day", new PRegEx.Digit().exactly(2))
+        ])
+
+        then:
+        pattern.toRegex() == '(?<year>\\d{4})\\-(?<month>\\d{2})\\-(?<day>\\d{2})'
+    }
+
+    def "NamedGroup should work with namedGroup() method"() {
+        when:
+        def pattern = new PRegEx.Digit().exactly(4).namedGroup("year")
+
+        then:
+        pattern.toRegex() == '(?<year>\\d{4})'
+    }
+
+    def "NamedGroup should validate group name"() {
+        when:
+        new PRegEx.NamedGroup("123invalid", new PRegEx.Digit())
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "NamedGroup should reject empty name"() {
+        when:
+        new PRegEx.NamedGroup("", new PRegEx.Digit())
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "NamedBackreference should create backreference"() {
+        when:
+        def pattern = new PRegEx.NamedBackreference("word")
+
+        then:
+        pattern.toRegex() == '\\k<word>'
+        pattern.getName() == 'word'
+    }
+
+    def "NamedBackreference should work with NamedGroup"() {
+        when:
+        def pattern = new PRegEx.Sequence([
+            new PRegEx.NamedGroup("word", new PRegEx.OneOrMore(new PRegEx.WordChar())),
+            new PRegEx.Whitespace(),
+            new PRegEx.NamedBackreference("word")
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+
+        then:
+        pattern.toRegex() == '(?<word>(?:\\w)+)\\s\\k<word>'
+        regex.matcher("hello hello").matches()
+        regex.matcher("world world").matches()
+        !regex.matcher("hello world").matches()
+    }
+
+    def "NamedGroup and NamedBackreference should work with date validation"() {
+        when:
+        def pattern = new PRegEx.Sequence([
+            new PRegEx.NamedGroup("year", new PRegEx.Digit().exactly(4)),
+            new PRegEx.Literal("-"),
+            new PRegEx.Digit().exactly(2),
+            new PRegEx.Literal("-"),
+            new PRegEx.Digit().exactly(2),
+            new PRegEx.Literal("-"),
+            new PRegEx.NamedBackreference("year")
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+
+        then:
+        pattern.toRegex() == '(?<year>\\d{4})\\-\\d{2}\\-\\d{2}\\-\\k<year>'
+        regex.matcher("2023-12-25-2023").matches()
+        !regex.matcher("2023-12-25-2024").matches()
+    }
+
+    def "NamedGroup with bioinformatics pattern example"() {
+        when:
+        // Pattern for sample ID with named groups: S123_T1_R1
+        def pattern = new PRegEx.Sequence([
+            new PRegEx.Literal("S"),
+            new PRegEx.NamedGroup("sampleid", new PRegEx.Digit().exactly(3)),
+            new PRegEx.Literal("_"),
+            new PRegEx.NamedGroup("treatment", new PRegEx.Either(["T", "C"])),
+            new PRegEx.NamedGroup("replicate", new PRegEx.Digit()),
+            new PRegEx.Literal("_"),
+            new PRegEx.NamedGroup("read", new PRegEx.Either(["R1", "R2"]))
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+        def matcher = regex.matcher("S123_T1_R1")
+
+        then:
+        pattern.toRegex() == 'S(?<sampleid>\\d{3})_(?<treatment>(?:T|C))(?<replicate>\\d)_(?<read>(?:R1|R2))'
+        matcher.matches()
+        matcher.group("sampleid") == "123"
+        matcher.group("treatment") == "T"
+        matcher.group("replicate") == "1"
+        matcher.group("read") == "R1"
     }
 }
