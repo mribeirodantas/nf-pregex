@@ -181,12 +181,12 @@ workflow {
     Problem: Illumina filenames encode metadata
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Format: SAMPLE_001_S1_L001_R1_001.fastq.gz
-              └─┬──┘  │  └─┬─┘ │  └─┬─┘
-                │     │    │   │    └─ Chunk (001)
-                │     │    │   └────── Read (R1/R2)
-                │     │    └────────── Lane (L001)
-                │     └─────────────── Sample # (S1)
-                └───────────────────── Sample name
+             └─┬──┘  │    └─┬─┘ │└─┬─┘
+               │     │      │   │  └─ Chunk (001)
+               │     │      │   └──── Read (R1/R2)
+               │     │      └──────── Lane (L001)
+               │     └─────────────── Sample # (S1)
+               └───────────────────── Sample name
     
     Traditional Regex (from Nextflow training):
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
