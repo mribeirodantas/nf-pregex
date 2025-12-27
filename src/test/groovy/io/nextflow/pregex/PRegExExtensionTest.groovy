@@ -176,4 +176,172 @@ class PRegExExtensionTest extends Specification {
         then:
         pattern.toRegex() == 'sample\\d'
     }
+
+    // CharRange and MultiRange tests
+
+    def "CharRange function should create CharRange pattern"() {
+        when:
+        def pattern = extension.CharRange('a', 'z')
+
+        then:
+        pattern.toRegex() == '[a-z]'
+    }
+
+    def "CharRange function should work with digits"() {
+        when:
+        def pattern = extension.CharRange('0', '9')
+
+        then:
+        pattern.toRegex() == '[0-9]'
+    }
+
+    def "CharRange function should work with quantifiers"() {
+        when:
+        def pattern = extension.CharRange('A', 'Z').exactly(3)
+
+        then:
+        pattern.toRegex() == '([A-Z]){3}'
+    }
+
+    def "MultiRange function should create MultiRange pattern"() {
+        when:
+        def pattern = extension.MultiRange("'a'-'z', 'A'-'Z', '0'-'9'")
+
+        then:
+        pattern.toRegex() == '[a-zA-Z0-9]'
+    }
+
+    def "MultiRange function should work with quantifiers"() {
+        when:
+        def pattern = extension.MultiRange("'a'-'z', 'A'-'Z'").oneOrMore()
+
+        then:
+        pattern.toRegex() == '([a-zA-Z])+'
+    }
+
+    // Bioinformatics Patterns tests
+
+    def "DNASequence function should create DNA pattern"() {
+        when:
+        def pattern = extension.DNASequence()
+
+        then:
+        pattern.toRegex() == '([ACGTacgt])+'
+    }
+
+    def "StrictDNASequence function should create strict DNA pattern"() {
+        when:
+        def pattern = extension.StrictDNASequence()
+
+        then:
+        pattern.toRegex() == '([ACGT])+'
+    }
+
+    def "DNASequenceWithAmbiguity function should work"() {
+        when:
+        def pattern = extension.DNASequenceWithAmbiguity()
+
+        then:
+        pattern.toRegex().contains('A')
+        pattern.toRegex().contains('N')
+    }
+
+    def "ProteinSequence function should create protein pattern"() {
+        when:
+        def pattern = extension.ProteinSequence()
+
+        then:
+        pattern.toRegex().contains('A')
+        pattern.toRegex().contains('L')
+    }
+
+    def "Chromosome function should create chromosome pattern"() {
+        when:
+        def pattern = extension.Chromosome()
+
+        then:
+        pattern.toRegex() != null
+    }
+
+    def "StrictChromosome function should create strict chromosome pattern"() {
+        when:
+        def pattern = extension.StrictChromosome()
+
+        then:
+        pattern.toRegex() != null
+    }
+
+    def "ReadPair function should create read pair pattern"() {
+        when:
+        def pattern = extension.ReadPair()
+
+        then:
+        pattern.toRegex().contains('R1')
+        pattern.toRegex().contains('R2')
+    }
+
+    def "FastqExtension function should create fastq extension pattern"() {
+        when:
+        def pattern = extension.FastqExtension()
+
+        then:
+        pattern.toRegex().contains('fastq')
+        pattern.toRegex().contains('fq')
+    }
+
+    def "VcfExtension function should create vcf extension pattern"() {
+        when:
+        def pattern = extension.VcfExtension()
+
+        then:
+        pattern.toRegex().contains('vcf')
+    }
+
+    def "AlignmentExtension function should create alignment extension pattern"() {
+        when:
+        def pattern = extension.AlignmentExtension()
+
+        then:
+        pattern.toRegex().contains('bam')
+        pattern.toRegex().contains('sam')
+    }
+
+    def "BedExtension function should create bed extension pattern"() {
+        when:
+        def pattern = extension.BedExtension()
+
+        then:
+        pattern.toRegex().contains('[Bb][Ee][Dd]')
+    }
+
+    def "GffGtfExtension function should create gff/gtf extension pattern"() {
+        when:
+        def pattern = extension.GffGtfExtension()
+
+        then:
+        pattern.toRegex().contains('gff')
+        pattern.toRegex().contains('gtf')
+    }
+
+    def "FastaExtension function should create fasta extension pattern"() {
+        when:
+        def pattern = extension.FastaExtension()
+
+        then:
+        pattern.toRegex().contains('fasta')
+        pattern.toRegex().contains('fa')
+    }
+
+    def "Complex pattern with CharRange and BioinformaticsPatterns should work"() {
+        when:
+        def pattern = extension.Sequence([
+            extension.CharRange('A', 'H'),
+            extension.CharRange('0', '9').exactly(2),
+            extension.Literal('_'),
+            extension.FastqExtension()
+        ])
+
+        then:
+        pattern.toRegex() != null
+    }
 }
