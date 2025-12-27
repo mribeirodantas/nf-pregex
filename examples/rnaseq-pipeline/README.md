@@ -152,16 +152,17 @@ def parseFilenameTraditional(fastq_path) {
 ```groovy
 def parseFilenameWithPregex(fastq_path) {
     // Crystal clear! 😊
+    // Note: Quantifiers (OneOrMore, exactly, Either) already create capture groups
     def illuminaPattern = Sequence([
-        OneOrMore(WordChar()).group(),          // Sample name (group 1)
+        OneOrMore(WordChar()),                  // Sample name (group 1)
         Literal("_S"),
-        OneOrMore(Digit()).group(),             // Sample number (group 2)
+        OneOrMore(Digit()),                     // Sample number (group 2)
         Literal("_L"),
-        Digit().exactly(3).group(),             // Lane (group 3)
+        Digit().exactly(3),                     // Lane (group 3)
         Literal("_"),
-        Either(["R1", "R2"]).group(),           // Read direction (group 4)
+        Either(["R1", "R2"]),                   // Read direction (group 4)
         Literal("_"),
-        Digit().exactly(3).group(),             // Chunk (group 5)
+        Digit().exactly(3),                     // Chunk (group 5)
         Literal(".fastq"),
         Optional(Literal(".gz"))
     ])

@@ -104,21 +104,22 @@ def parseFilenameTraditional(fastq_path) {
  */
 def parseFilenameWithPregex(fastq_path) {
     // Build a readable pattern using nf-pregex
+    // Note: OneOrMore, Either, and quantifiers already create capturing groups
     def illuminaPattern = Sequence([
         // Sample name: one or more word characters (capture group 1)
-        OneOrMore(WordChar()).group(),
+        OneOrMore(WordChar()),
         Literal("_S"),
         // Sample number: one or more digits (capture group 2)
-        OneOrMore(Digit()).group(),
+        OneOrMore(Digit()),
         Literal("_L"),
         // Lane: exactly 3 digits (capture group 3)
-        Digit().exactly(3).group(),
+        Digit().exactly(3),
         Literal("_"),
         // Read direction: R1 or R2 (capture group 4)
-        Either(["R1", "R2"]).group(),
+        Either(["R1", "R2"]),
         Literal("_"),
         // Chunk: exactly 3 digits (capture group 5)
-        Digit().exactly(3).group(),
+        Digit().exactly(3),
         // Extension: .fastq or .fastq.gz
         Literal(".fastq"),
         Optional(Literal(".gz"))
@@ -201,15 +202,15 @@ workflow {
     With nf-pregex:
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Sequence([
-        OneOrMore(WordChar()).group(),          // Sample name - Clear!
+        OneOrMore(WordChar()),                  // Sample name - Clear!
         Literal("_S"),
-        OneOrMore(Digit()).group(),             // Sample # - Readable!
+        OneOrMore(Digit()),                     // Sample # - Readable!
         Literal("_L"),
-        Digit().exactly(3).group(),             // Lane - Self-documenting!
+        Digit().exactly(3),                     // Lane - Self-documenting!
         Literal("_"),
-        Either(["R1", "R2"]).group(),           // Read - Obvious meaning!
+        Either(["R1", "R2"]),                   // Read - Obvious meaning!
         Literal("_"),
-        Digit().exactly(3).group(),             // Chunk
+        Digit().exactly(3),                     // Chunk
         Literal(".fastq"),
         Optional(Literal(".gz"))
     ])
