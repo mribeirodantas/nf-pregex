@@ -1,129 +1,142 @@
 #!/usr/bin/env nextflow
 
 /*
- * Simple RNA-seq Pipeline Example with nf-pregex
+ * Illumina FASTQ Filename Parsing Example
  * 
- * A minimal RNA-seq workflow demonstrating practical pattern matching
- * with the nf-pregex plugin for input validation and file handling.
+ * Demonstrates how nf-pregex solves the real-world problem of parsing
+ * complex Illumina FASTQ filenames to extract embedded metadata.
  * 
- * Pipeline steps:
- * 1. FastQC - Quality control of raw reads
- * 2. Salmon - Transcript quantification (quasi-mapping mode)
+ * Illumina filename format: SAMPLE_001_S1_L001_R1_001.fastq.gz
+ *   - SAMPLE_001: Sample name
+ *   - S1: Sample number (order in sample sheet)
+ *   - L001: Lane number
+ *   - R1: Read direction (R1 or R2 for paired-end)
+ *   - 001: Chunk/segment number
+ * 
+ * This is the actual pain point shown in Nextflow training materials!
+ * Traditional regex: /^(.+)_S(\d+)_L(\d{3})_(R[12])_(\d{3})\.fastq(?:\.gz)?$/
+ *                    ^^^ Hard to read, easy to break, difficult to maintain
  */
 
-// Import nf-pregex for input validation
+// Import nf-pregex patterns
 include { 
     Sequence
+    Literal
     OneOrMore
+    Digit
+    Either
     WordChar
-    ReadPair
-    FastqExtension
+    Optional
 } from 'plugin/nf-pregex'
 
 /*
  * Pipeline Parameters
  */
-params.reads = "data/*_{1,2}.fastq.gz"
-params.transcriptome = null
+params.reads = "data/*_S*_L*_R*_*.fastq.gz"
 params.outdir = "results"
 params.help = false
 
 /*
- * Process: Quality Control with FastQC
+ * Process: Parse and display FASTQ metadata
+ * 
+ * This process demonstrates metadata extraction from Illumina filenames.
+ * In a real pipeline, this metadata would be used for:
+ * - Quality control decisions
+ * - Lane merging
+ * - Sample demultiplexing
+ * - Output organization
  */
-process FASTQC {
-    tag "${meta.id}"
-    container 'community.wave.seqera.io/library/fastqc:0.12.1--c32dc0120769c2c0'
-    publishDir "${params.outdir}/fastqc", mode: 'copy'
+process PARSE_AND_QC {
+    tag "${meta.sample_name}"
+    publishDir "${params.outdir}/parsed_metadata", mode: 'copy'
     
     input:
     tuple val(meta), path(reads)
     
     output:
-    tuple val(meta), path("*.html"), emit: html
-    tuple val(meta), path("*.zip"), emit: zip
+    tuple val(meta), path("${meta.sample_name}_metadata.json")
     
     script:
     """
-    fastqc -q -t ${task.cpus} ${reads}
+    cat > ${meta.sample_name}_metadata.json <<EOF
+    {
+      "sample_name": "${meta.sample_name}",
+      "sample_number": ${meta.sample_num},
+      "lane": "${meta.lane}",
+      "read": "${meta.read}",
+      "chunk": "${meta.chunk}",
+      "filename": "${reads.name}",
+      "file_size": "${reads.size()} bytes",
+      "parsing_method": "nf-pregex"
+    }
+    EOF
+    
+    echo "✅ Successfully parsed: ${reads.name}"
+    echo "   Sample: ${meta.sample_name}"
+    echo "   Lane: ${meta.lane}, Read: ${meta.read}"
     """
 }
 
 /*
- * Process: Build Salmon index
+ * Helper function: Parse Illumina filename using TRADITIONAL REGEX
+ * This is the approach shown in Nextflow training materials
  */
-process SALMON_INDEX {
-    tag "${transcriptome.name}"
-    container 'community.wave.seqera.io/library/salmon:1.10.3--93ecff8e9d4d2cd9'
+def parseFilenameTraditional(fastq_path) {
+    // Traditional regex - cryptic and error-prone!
+    def m = (fastq_path.name =~ /^(.+)_S(\d+)_L(\d{3})_(R[12])_(\d{3})\.fastq(?:\.gz)?$/)
     
-    input:
-    path transcriptome
+    if (!m) {
+        return null
+    }
     
-    output:
-    path "salmon_index", emit: index
-    
-    script:
-    """
-    salmon index \\
-        -t ${transcriptome} \\
-        -i salmon_index \\
-        -k 31 \\
-        -p ${task.cpus}
-    """
+    return [
+        sample_name: m[0][1],
+        sample_num: m[0][2].toInteger(),
+        lane: m[0][3],
+        read: m[0][4],
+        chunk: m[0][5]
+    ]
 }
 
 /*
- * Process: Salmon quantification
+ * Helper function: Parse Illumina filename using NF-PREGEX
+ * Clean, readable, and self-documenting!
  */
-process SALMON_QUANT {
-    tag "${meta.id}"
-    container 'community.wave.seqera.io/library/salmon:1.10.3--93ecff8e9d4d2cd9'
-    publishDir "${params.outdir}/salmon", mode: 'copy'
+def parseFilenameWithPregex(fastq_path) {
+    // Build a readable pattern using nf-pregex
+    def illuminaPattern = Sequence(
+        // Sample name: one or more word characters
+        OneOrMore(WordChar()).capture("sample"),
+        Literal("_S"),
+        // Sample number: one or more digits
+        OneOrMore(Digit()).capture("sample_num"),
+        Literal("_L"),
+        // Lane: exactly 3 digits
+        Digit().exactly(3).capture("lane"),
+        Literal("_"),
+        // Read direction: R1 or R2
+        Either(["R1", "R2"]).capture("read"),
+        Literal("_"),
+        // Chunk: exactly 3 digits
+        Digit().exactly(3).capture("chunk"),
+        // Extension: .fastq or .fastq.gz
+        Literal(".fastq"),
+        Optional(Literal(".gz"))
+    )
     
-    input:
-    tuple val(meta), path(reads)
-    path index
+    def m = (fastq_path.name =~ illuminaPattern)
     
-    output:
-    tuple val(meta), path("${meta.id}"), emit: results
-    tuple val(meta), path("${meta.id}/quant.sf"), emit: quant
+    if (!m) {
+        return null
+    }
     
-    script:
-    def read1 = reads[0]
-    def read2 = reads[1]
-    """
-    salmon quant \\
-        -i ${index} \\
-        -l A \\
-        -1 ${read1} \\
-        -2 ${read2} \\
-        -p ${task.cpus} \\
-        --validateMappings \\
-        -o ${meta.id}
-    """
-}
-
-/*
- * Process: MultiQC aggregation
- */
-process MULTIQC {
-    container 'community.wave.seqera.io/library/multiqc:1.25.4--0bd44c59c1e5f89c'
-    publishDir "${params.outdir}/multiqc", mode: 'copy'
-    
-    input:
-    path('fastqc/*')
-    path('salmon/*')
-    
-    output:
-    path("multiqc_report.html"), emit: html
-    path("multiqc_data"), emit: data
-    
-    script:
-    """
-    multiqc . \\
-        --force \\
-        --filename multiqc_report.html
-    """
+    return [
+        sample_name: m.group("sample"),
+        sample_num: m.group("sample_num").toInteger(),
+        lane: m.group("lane"),
+        read: m.group("read"),
+        chunk: m.group("chunk")
+    ]
 }
 
 /*
@@ -134,90 +147,122 @@ workflow {
     // Show help message
     if (params.help) {
         log.info """
+        ╔════════════════════════════════════════════════════════════════╗
+        ║  Illumina FASTQ Filename Parsing Example                      ║
+        ╚════════════════════════════════════════════════════════════════╝
+        
         Usage:
-          nextflow run main.nf --reads 'data/*_{1,2}.fastq.gz' --transcriptome transcriptome.fa
+          nextflow run main.nf --reads 'data/*_S*_L*_R*_*.fastq.gz'
         
-        Required arguments:
-          --reads            Path to paired-end FASTQ files
-          --transcriptome    Path to transcriptome FASTA file
+        This example demonstrates parsing Illumina FASTQ filenames like:
+          SAMPLE_001_S1_L001_R1_001.fastq.gz
         
-        Optional arguments:
-          --outdir           Output directory (default: results)
-          --help             Show this help message
+        Arguments:
+          --reads    Path pattern to Illumina FASTQ files
+          --outdir   Output directory (default: results)
+          --help     Show this help message
+        
+        The pipeline extracts metadata:
+          - Sample name (SAMPLE_001)
+          - Sample number (S1)
+          - Lane (L001)
+          - Read direction (R1/R2)
+          - Chunk number (001)
         """
         exit 0
     }
     
-    // Validate required parameters
-    if (!params.transcriptome) {
-        error "Please provide a transcriptome file with --transcriptome"
-    }
-    
-    // Display patterns for user understanding
     log.info """
     ╔════════════════════════════════════════════════════════════════╗
-    ║  RNA-seq Pipeline with nf-pregex                               ║
+    ║  Illumina FASTQ Filename Parsing with nf-pregex               ║
     ╚════════════════════════════════════════════════════════════════╝
     
-    Input Validation Patterns:
+    Problem: Illumina filenames encode metadata
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Format: SAMPLE_001_S1_L001_R1_001.fastq.gz
+              └─┬──┘  │  └─┬─┘ │  └─┬─┘
+                │     │    │   │    └─ Chunk (001)
+                │     │    │   └────── Read (R1/R2)
+                │     │    └────────── Lane (L001)
+                │     └─────────────── Sample # (S1)
+                └───────────────────── Sample name
+    
+    Traditional Regex (from Nextflow training):
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /^(.+)_S(\\d+)_L(\\d{3})_(R[12])_(\\d{3})\\.fastq(?:\\.gz)?\$/
+    
+    ❌ Problems:
+       • Hard to read - what does \\d{3} mean?
+       • Easy to forget escaping (\\. vs .)
+       • Difficult to modify
+       • No self-documentation
+       • Prone to subtle bugs
+    
+    With nf-pregex:
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Sequence(
+        OneOrMore(WordChar()).capture("sample"),     // Clear!
+        Literal("_S"),
+        OneOrMore(Digit()).capture("sample_num"),    // Readable!
+        Literal("_L"),
+        Digit().exactly(3).capture("lane"),          // Self-documenting!
+        Literal("_"),
+        Either(["R1", "R2"]).capture("read"),        // Obvious meaning!
+        Literal("_"),
+        Digit().exactly(3).capture("chunk"),
+        Literal(".fastq"),
+        Optional(Literal(".gz"))
+    )
+    
+    ✅ Benefits:
+       • Instantly understandable
+       • Automatic escaping
+       • Easy to modify
+       • Self-documenting
+       • Named capture groups
+    
+    Processing files...
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     """
     
-    // Demonstrate pattern creation with nf-pregex
-    def fastqPattern = Sequence(
-        OneOrMore(WordChar()),
-        ReadPair(),
-        FastqExtension()
-    )
-    
-    log.info "  FASTQ files:     ${fastqPattern}"
-    log.info ""
-    log.info "Benefits of nf-pregex:"
-    log.info "  ✓ Readable pattern definitions"
-    log.info "  ✓ Self-documenting code"
-    log.info "  ✓ Bioinformatics-specific patterns"
-    log.info "  ✓ Reduced regex errors"
-    log.info "  ✓ Better maintainability"
-    log.info ""
-    
-    // Create input channel with metadata
+    // Create input channel and parse filenames
     def reads_ch = channel
-        .fromFilePairs(params.reads, checkIfExists: true)
-        .map { id, files ->
-            def meta = [id: id]
-            tuple(meta, files)
+        .fromPath(params.reads, checkIfExists: true)
+        .map { fastq_path ->
+            // Parse filename using nf-pregex
+            def file_meta = parseFilenameWithPregex(fastq_path)
+            
+            if (!file_meta) {
+                error "Failed to parse filename: ${fastq_path.name}\nExpected Illumina format: SAMPLE_S#_L###_R#_###.fastq.gz"
+            }
+            
+            log.info "  ✓ Parsed: ${fastq_path.name}"
+            log.info "    └─ Sample: ${file_meta.sample_name} | Lane: ${file_meta.lane} | Read: ${file_meta.read}"
+            
+            tuple(file_meta, fastq_path)
         }
     
-    // Build Salmon index
-    def transcriptome_ch = channel.fromPath(params.transcriptome, checkIfExists: true)
-    SALMON_INDEX(transcriptome_ch)
+    // Run parsing and QC process
+    PARSE_AND_QC(reads_ch)
     
-    // Run FastQC
-    FASTQC(reads_ch)
-    
-    // Run Salmon quantification
-    SALMON_QUANT(reads_ch, SALMON_INDEX.out.index)
-    
-    // Collect QC outputs for MultiQC
-    def fastqc_ch = FASTQC.out.zip.map { _meta, zip -> zip }.collect()
-    def salmon_ch = SALMON_QUANT.out.results.map { _meta, dir -> dir }.collect()
-    
-    // Run MultiQC
-    MULTIQC(fastqc_ch, salmon_ch)
-    
-    // Display completion message with pattern summary
+    // Display completion message
     workflow.onComplete {
         log.info """
+        
         ╔════════════════════════════════════════════════════════════════╗
-        ║  Pipeline Complete!                                            ║
+        ║  Parsing Complete!                                             ║
         ╚════════════════════════════════════════════════════════════════╝
         
-        nf-pregex patterns used:
-          • ReadPair():       ${ReadPair()}
-          • FastqExtension(): ${FastqExtension()}
+        Results: ${params.outdir}/parsed_metadata/
         
-        Results: ${params.outdir}
-        Status: ${workflow.success ? 'SUCCESS' : 'FAILED'}
+        Compare the approaches:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Traditional:  /^(.+)_S(\\d+)_L(\\d{3})_(R[12])_(\\d{3})\\.fastq(?:\\.gz)?\$/
+        nf-pregex:    Sequence(OneOrMore(WordChar()), Literal("_S"), ...)
+        
+        Which would YOU rather maintain? 🤔
+        
+        Status: ${workflow.success ? '✅ SUCCESS' : '❌ FAILED'}
         """
     }
 }

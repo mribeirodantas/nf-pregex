@@ -1,321 +1,292 @@
-# RNA-seq Pipeline - nf-pregex Example
+# Illumina FASTQ Filename Parsing - Real-World nf-pregex Example
 
-A simple RNA-seq pipeline demonstrating the benefits of using the **nf-pregex plugin** for pattern matching and validation in Nextflow workflows.
+**THE PROBLEM**: Illumina sequencers generate FASTQ files with complex filenames that encode critical metadata. Extracting this metadata requires regex patterns that are notoriously difficult to write, read, and maintain.
 
-## Overview
+**THE SOLUTION**: nf-pregex transforms cryptic regex into readable, self-documenting code.
 
-This example showcases how nf-pregex transforms complex regex patterns into readable, maintainable code using human-friendly pattern builders. Instead of cryptic regex strings, you get self-documenting patterns specifically designed for bioinformatics workflows.
+## The Real Pain Point
 
-## Pipeline Steps
+If you've worked with Illumina sequencing data, you've encountered filenames like this:
 
-1. **Quality Control** - FastQC analysis of raw reads
-2. **Salmon Index** - Build transcriptome index for quantification
-3. **Salmon Quant** - Transcript-level quantification using quasi-mapping
-4. **MultiQC** - Aggregate QC reports from FastQC and Salmon
-
-## Key Benefits Demonstrated
-
-### 1. **Readable Input Validation** 🎯
-
-**Traditional Regex Approach:**
-```groovy
-def pattern = /(\w)+_(R1|R2)\.fastq(\.gz)?/
-// What does this match? Hard to tell at a glance!
+```
+SAMPLE_001_S1_L001_R1_001.fastq.gz
 ```
 
-**With nf-pregex:**
+This filename encodes:
+- **SAMPLE_001**: Sample name
+- **S1**: Sample number (position in sample sheet)
+- **L001**: Lane number
+- **R1**: Read direction (R1 or R2 for paired-end)
+- **001**: Chunk/segment number
+
+### The Traditional Approach (From Nextflow Training)
+
+The [official Nextflow training materials](https://training.nextflow.io/) show this regex for parsing Illumina filenames:
+
 ```groovy
-def fastqPattern = Sequence(
-    OneOrMore(WordChar()),     // Sample name - clear!
-    ReadPair(),                // _R1, _R2, etc. - semantic!
-    FastqExtension()           // .fastq.gz, .fq - standardized!
+def m = (fastq_path.name =~ /^(.+)_S(\d+)_L(\d{3})_(R[12])_(\d{3})\.fastq(?:\.gz)?$/)
+```
+
+**Problems with this approach:**
+
+❌ **Cryptic** - What does `\d{3}` mean? Lane or chunk?  
+❌ **Error-prone** - Easy to forget escaping (`\.` vs `.`)  
+❌ **Hard to modify** - Adding a new field requires regex expertise  
+❌ **No documentation** - Requires comments to explain  
+❌ **Subtle bugs** - Wrong capture group order breaks everything  
+❌ **Maintenance nightmare** - Six months later, you won't remember what this does
+
+### The nf-pregex Approach
+
+```groovy
+def illuminaPattern = Sequence(
+    OneOrMore(WordChar()).capture("sample"),      // Sample name
+    Literal("_S"),
+    OneOrMore(Digit()).capture("sample_num"),     // Sample number
+    Literal("_L"),
+    Digit().exactly(3).capture("lane"),           // Lane (3 digits)
+    Literal("_"),
+    Either(["R1", "R2"]).capture("read"),         // Read direction
+    Literal("_"),
+    Digit().exactly(3).capture("chunk"),          // Chunk (3 digits)
+    Literal(".fastq"),
+    Optional(Literal(".gz"))                      // Optional compression
 )
-// Immediately obvious what this matches!
 ```
 
-### 2. **Self-Documenting Code** 📖
+**Benefits:**
 
-The pattern definitions serve as documentation:
-- `ReadPair()` - everyone knows this means R1/R2 or _1/_2
-- `FastqExtension()` - no need to remember all possible FASTQ extensions
-- `Chromosome()` - handles chr1, chr22, chrX, chrY, chrM automatically
+✅ **Instantly readable** - Anyone can understand this  
+✅ **Self-documenting** - Comments explain *why*, not *what*  
+✅ **Automatic escaping** - `Literal(".")` handles escaping  
+✅ **Named captures** - `m.group("lane")` vs `m[0][3]`  
+✅ **Easy to modify** - Add fields without regex expertise  
+✅ **Maintainable** - Future you will thank present you
 
-### 3. **Bioinformatics-Specific Patterns** 🧬
+## This Example
 
-Built-in patterns for common bioinformatics formats:
+This minimal example demonstrates **real-world filename parsing** with both traditional regex and nf-pregex, showing:
 
-```groovy
-// DNA sequence validation
-def dna = DNASequence()              // ACGT nucleotides
-def ambigDna = DNASequenceWithAmbiguity()  // Includes N, R, Y, etc.
+1. **Side-by-side comparison** - See both approaches in working code
+2. **Actual Illumina format** - The exact pattern from Nextflow training
+3. **Metadata extraction** - Parse all components from the filename
+4. **Named capture groups** - Access fields by name, not index
+5. **JSON output** - Extracted metadata saved for downstream use
 
-// File extension matching
-FastqExtension()        // .fastq, .fq, .fastq.gz
-AlignmentExtension()    // .bam, .sam, .cram
-VcfExtension()          // .vcf, .vcf.gz, .bcf
-BedExtension()          // .bed, .bed.gz
+## Why This Matters
 
-// Genomic identifiers
-Chromosome()            // chr1-22, chrX, chrY, chrM, with/without prefix
-ReadPair()             // _R1, _R2, _1, _2, .R1, .R2
-```
+Real nf-core pipelines struggle with this exact problem:
 
-### 4. **Error Prevention** ✅
+- [nf-core/ampliseq #182](https://github.com/nf-core/ampliseq/issues/182): "fastq filename convention and sample name parsing" - filename parsing breaks with certain naming patterns
+- Nextflow training devotes an entire section to this regex pattern
+- Every bioinformatician who's built a pipeline has wrestled with this
 
-Automatic escaping prevents common regex errors:
-
-```groovy
-// Traditional regex - easy to forget escaping
-def pattern = /file.txt/  // Oops! . matches any character
-
-// With nf-pregex - automatic escaping
-def pattern = Literal("file.txt")  // Correctly escaped: file\.txt
-```
-
-### 5. **Better Maintainability** 🔧
-
-Complex patterns remain readable:
-
-```groovy
-// Extract sample metadata with clear structure
-def samplePattern = Sequence(
-    OneOrMore(WordChar()),     // Sample ID
-    Literal("_"),
-    OneOrMore(WordChar()),     // Condition (control/treatment)
-    Literal("_"),
-    Literal("rep"),
-    Digit(),                   // Replicate number
-    Literal("_"),
-    Either(["R1", "R2"]),      // Read pair
-    FastqExtension()
-)
-// Matches: SAMPLE001_control_rep1_R1.fastq.gz
-```
+**This is the actual pain point nf-pregex solves.**
 
 ## Quick Start
 
-### Prerequisites
+### Running the Example
 
-- Nextflow >= 23.10.0
-- nf-pregex plugin >= 0.1.0
+```bash
+# View help and see the pattern comparison
+nextflow run main.nf --help
 
-### Installation
+# Create test data
+mkdir -p data
+touch data/SAMPLE_001_S1_L001_R1_001.fastq.gz
+touch data/SAMPLE_001_S1_L001_R2_001.fastq.gz
+touch data/SAMPLE_002_S2_L001_R1_001.fastq.gz
 
-The plugin is automatically loaded via the `nextflow.config` file:
+# Run the parsing example
+nextflow run main.nf --reads 'data/*_S*_L*_R*_*.fastq.gz'
 
-```groovy
-plugins {
-    id 'nf-pregex@0.1.0'
+# View extracted metadata
+cat results/parsed_metadata/*.json
+```
+
+### Expected Output
+
+The pipeline will parse each filename and extract:
+
+```json
+{
+  "sample_name": "SAMPLE_001",
+  "sample_number": 1,
+  "lane": "001",
+  "read": "R1",
+  "chunk": "001",
+  "filename": "SAMPLE_001_S1_L001_R1_001.fastq.gz",
+  "parsing_method": "nf-pregex"
 }
 ```
 
-### Running the Pipeline
+## Code Comparison
 
-```bash
-# View help
-nextflow run main.nf --help
-
-# Run with default parameters (dry run - creates mock outputs)
-nextflow run main.nf
-
-# Run with custom inputs
-nextflow run main.nf \
-    --reads "data/*_{R1,R2}.fastq.gz" \
-    --reference "reference/genome.fa" \
-    --outdir "results"
-
-# Skip quality control
-nextflow run main.nf --skip_qc
-
-# Use Docker containers
-nextflow run main.nf -profile docker
-```
-
-### Expected Input Structure
-
-```
-project/
-├── data/
-│   ├── sample1_R1.fastq.gz
-│   ├── sample1_R2.fastq.gz
-│   ├── sample2_R1.fastq.gz
-│   └── sample2_R2.fastq.gz
-└── reference/
-    └── genome.fa
-```
-
-## Pattern Examples from This Pipeline
-
-### Input File Validation
+### Traditional Regex (Cryptic)
 
 ```groovy
-def validFastqPattern = Sequence(
-    OneOrMore(WordChar()),     // Sample name
-    ReadPair(),                // _R1, _R2, etc.
-    FastqExtension()           // .fastq.gz, .fq
-)
-
-// Validates: sample1_R1.fastq.gz ✓
-// Rejects: sample1.txt ✗
+def parseFilenameTraditional(fastq_path) {
+    // What does this even match? 🤔
+    def m = (fastq_path.name =~ /^(.+)_S(\d+)_L(\d{3})_(R[12])_(\d{3})\.fastq(?:\.gz)?$/)
+    
+    if (!m) return null
+    
+    return [
+        sample_name: m[0][1],    // Which capture group is which?
+        sample_num: m[0][2].toInteger(),
+        lane: m[0][3],
+        read: m[0][4],
+        chunk: m[0][5]
+    ]
+}
 ```
 
-### Output File Naming
+**Issues:**
+- Need to count parentheses to understand captures
+- `m[0][3]` - is that lane or read?
+- Forgetting `\.` vs `.` breaks everything
+- `(?:\.gz)?` - non-capturing group syntax is cryptic
+
+### nf-pregex (Readable)
 
 ```groovy
-def trimmedPattern = Sequence(
-    Literal(meta.id),
-    Literal("_trimmed"),
-    ReadPair(),
-    FastqExtension()
-)
-// Produces: sample1_trimmed_R1.fastq.gz
+def parseFilenameWithPregex(fastq_path) {
+    // Crystal clear! 😊
+    def illuminaPattern = Sequence(
+        OneOrMore(WordChar()).capture("sample"),      // Sample name
+        Literal("_S"),
+        OneOrMore(Digit()).capture("sample_num"),     // Sample number  
+        Literal("_L"),
+        Digit().exactly(3).capture("lane"),           // Lane (3 digits)
+        Literal("_"),
+        Either(["R1", "R2"]).capture("read"),         // Read direction
+        Literal("_"),
+        Digit().exactly(3).capture("chunk"),          // Chunk (3 digits)
+        Literal(".fastq"),
+        Optional(Literal(".gz"))
+    )
+    
+    def m = (fastq_path.name =~ illuminaPattern)
+    
+    if (!m) return null
+    
+    return [
+        sample_name: m.group("sample"),      // Named access!
+        sample_num: m.group("sample_num").toInteger(),
+        lane: m.group("lane"),
+        read: m.group("read"),
+        chunk: m.group("chunk")
+    ]
+}
 ```
 
-### Alignment Output
-
-```groovy
-def bamPattern = Sequence(
-    Literal(meta.id),
-    AlignmentExtension()       // .bam, .sam, .cram
-)
-// Produces: sample1.bam
-```
-
-### Chromosome Validation
-
-```groovy
-def chrPattern = Chromosome()  // chr1, chr2, chrX, etc.
-// Validates chromosome names in outputs
-```
-
-## Comparison: Traditional vs nf-pregex
-
-| Aspect | Traditional Regex | nf-pregex |
-|--------|------------------|-----------|
-| **Readability** | `/(\w)+_(R1\|R2)\.fastq(\.gz)?/` | `Sequence(OneOrMore(WordChar()), ReadPair(), FastqExtension())` |
-| **Maintainability** | Need regex expertise | Self-explanatory |
-| **Error-prone** | Easy to forget escaping | Automatic escaping |
-| **Reusability** | Copy-paste strings | Import pattern functions |
-| **Documentation** | Needs comments | Code is documentation |
-| **Bioinformatics** | DIY everything | Built-in patterns |
-
-## Benefits Summary
-
-✅ **Readable** - Patterns are self-documenting  
-✅ **Maintainable** - Easy to modify and understand  
-✅ **Type-safe** - Compile-time checking in Groovy  
-✅ **Reusable** - Build complex patterns from simple components  
-✅ **Error-preventing** - Automatic escaping of special characters  
-✅ **Domain-specific** - Bioinformatics patterns included  
-✅ **Collaborative** - Team members without regex expertise can understand code  
+**Benefits:**
+- Each line has a clear purpose
+- Named capture groups (no counting!)
+- Automatic escaping (`Literal(".")`)
+- Comments explain intent, not mechanics
+- Easy to add new fields
 
 ## Real-World Use Cases
 
-### Use Case 1: Complex Sample ID Parsing
+This parsing pattern is essential for:
+
+### 1. **Lane Merging**
 ```groovy
-// Traditional regex: /S(\d){3}_(T|C)(\d)_(R1|R2)/
-// Hard to understand what this matches!
-
-// With nf-pregex:
-def sampleIdPattern = Sequence(
-    Literal("S"),
-    Digit().exactly(3),        // Sample number: 001-999
-    Literal("_"),
-    Either(["T", "C"]),        // Treatment or Control
-    Digit(),                   // Replicate: 1-9
-    Literal("_"),
-    Either(["R1", "R2"])       // Read pair
-)
-// Crystal clear: Matches S001_T1_R1, S123_C2_R2, etc.
+// Group files by sample and read, merge across lanes
+channel
+    .fromPath(params.reads)
+    .map { file -> tuple(parseFilename(file), file) }
+    .groupTuple(by: [0, 1])  // Group by [sample, read]
+    .map { meta, files -> 
+        // Merge L001, L002, L003... for same sample
+        tuple(meta, files.flatten())
+    }
 ```
 
-### Use Case 2: Multi-format File Handling
+### 2. **Quality Control Routing**
 ```groovy
-// Accept multiple input formats with clear validation
-def sequencingFile = Sequence(
-    OneOrMore(WordChar()),
-    Either(
-        FastqExtension(),      // .fastq, .fq, .fastq.gz
-        VcfExtension(),        // .vcf, .vcf.gz, .bcf
-        AlignmentExtension()   // .bam, .sam, .cram
-    )
-)
+// Route to different QC processes based on sample number
+channel
+    .fromPath(params.reads)
+    .map { file -> tuple(parseFilename(file), file) }
+    .branch {
+        highPriority: it[0].sample_num <= 10
+        standard: true
+    }
 ```
 
-### Use Case 3: Metadata Extraction
+### 3. **Metadata-Driven Processing**
 ```groovy
-// Extract components from complex filenames
-def plateWellPattern = Sequence(
-    CharRange('A', 'H'),       // Row: A-H
-    CharRange('0', '9').exactly(2)  // Column: 00-99
-)
-// Matches: A01, B12, H08 - plate coordinates!
+// Use lane info for parallelization decisions
+def meta = parseFilename(fastq_path)
+if (meta.lane == "001" && meta.chunk == "001") {
+    // First chunk of first lane - initialize
+    initializeAnalysis(meta, fastq_path)
+} else {
+    // Subsequent chunks - append
+    appendToAnalysis(meta, fastq_path)
+}
 ```
 
-## Pipeline Output
+## Why Not Just Use String.split()?
 
-```
-results/
-├── fastqc/
-│   ├── sample1_R1_fastqc.html
-│   ├── sample1_R1_fastqc.zip
-│   └── ...
-├── trimmed/
-│   ├── sample1_trimmed_R1.fastq.gz
-│   ├── sample1_trimmed_R2.fastq.gz
-│   └── ...
-├── alignments/
-│   ├── sample1.bam
-│   ├── sample1.STAR.log
-│   └── ...
-├── counts/
-│   ├── sample1.counts.txt
-│   └── ...
-├── pipeline_report.html
-├── timeline.html
-└── trace.txt
-```
-
-## Advanced Features
-
-### Method Chaining
+You might think: "Can't I just split on underscores?"
 
 ```groovy
-// Combine patterns fluently
-def pattern = Literal("sample")
-    .then(Digit().exactly(3))
-    .then(Literal(".txt"))
-    .optional()
+// Seems simple...
+def parts = filename.split("_")
+def sample = parts[0]
+def sampleNum = parts[1].replace("S", "")
+def lane = parts[2].replace("L", "")
+// etc...
 ```
 
-### Custom Patterns
+**Problems:**
+- ❌ Breaks if sample name contains underscores (`SAMPLE_001` → problem!)
+- ❌ No validation (garbage in, garbage out)
+- ❌ Fragile (wrong number of parts = crash)
+- ❌ No type conversion (everything is a string)
+- ❌ Hard to handle optional extensions
 
-```groovy
-// Create reusable custom patterns
-def customID = Sequence(
-    MultiRange("'A'-'Z', '0'-'9'").exactly(3),
-    Literal("-"),
-    MultiRange("'a'-'z', '0'-'9'").exactly(4)
-)
-// Matches: A1B-x9y2, 3XZ-test, etc.
-```
+**Regex is the right tool, nf-pregex makes it usable.**
+
+## Comparison Table
+
+| Aspect | Traditional Regex | String.split() | nf-pregex |
+|--------|------------------|----------------|-----------|
+| **Readable** | ❌ Cryptic | ⚠️ Fragile | ✅ Clear |
+| **Validates** | ✅ Yes | ❌ No | ✅ Yes |
+| **Named captures** | ⚠️ By index | ❌ No | ✅ By name |
+| **Handles edge cases** | ⚠️ If correct | ❌ No | ✅ Yes |
+| **Maintainable** | ❌ Expertise needed | ⚠️ Breaks easily | ✅ Easy |
+| **Self-documenting** | ❌ Needs comments | ❌ Needs comments | ✅ Inherent |
+
+## The Bottom Line
+
+**If you've ever:**
+- Spent 30 minutes debugging a regex
+- Forgotten to escape a `.` and matched wrong files
+- Struggled to explain a regex pattern to a colleague
+- Had a regex break when requirements changed
+
+**Then nf-pregex is for you.**
+
+This example solves a **real problem** that **real pipelines** face. The Illumina filename parsing regex from Nextflow training is genuinely difficult - nf-pregex makes it genuinely easy.
 
 ## Learn More
 
 - [nf-pregex Plugin Documentation](../../README.md)
-- [API Reference](../../docs/API.md)
-- [Tutorial](../../docs/TUTORIAL.md)
 - [Basic Examples](../basic_usage.nf)
 - [File Matching Examples](../file_matching.nf)
+- [Nextflow Training: Pattern Matching](https://training.nextflow.io/)
 
-## Contributing
+## References
 
-Found a bug or have a suggestion? Please open an issue or pull request in the [nf-pregex repository](https://github.com/mribeirodantas/nf-pregex).
-
-## License
-
-This example is part of the nf-pregex plugin, licensed under the Apache License 2.0.
+- [Illumina FASTQ Naming Convention](https://support.illumina.com/help/BaseSpace_Sequence_Hub_OLH_009008_2/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)
+- [Nextflow Training: String Processing](https://training.nextflow.io/0.dev/side_quests/essential_scripting_patterns/)
+- [nf-core/ampliseq Issue #182](https://github.com/nf-core/ampliseq/issues/182) - Real-world filename parsing problems
 
 ---
 
-**💡 Pro Tip:** Start using nf-pregex patterns incrementally. Replace the most complex regex patterns first, and gradually adopt patterns throughout your pipeline. Your future self (and your collaborators) will thank you!
+**💡 Real-world impact:** Every bioinformatics pipeline that processes Illumina data deals with this exact problem. nf-pregex turns a frustrating regex into readable code.
