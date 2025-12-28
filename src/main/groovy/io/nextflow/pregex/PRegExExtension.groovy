@@ -219,6 +219,20 @@ class PRegExExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Creates a capturing group for the given pattern.
+     * This is essential for extracting matched substrings from the input.
+     * 
+     * Example: Group(Digit()) produces "(\d)" which captures the digit
+     * 
+     * @param pattern The pattern to capture
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx Group(PRegEx pattern) {
+        return new PRegEx.Group(pattern)
+    }
+
+    /**
      * Creates a character class pattern that matches any of the specified characters.
      * 
      * Example: CharClass("abc") produces "[abc]"

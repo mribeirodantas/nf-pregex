@@ -27,6 +27,7 @@ include {
     Either
     WordChar
     Optional
+    Group
 } from 'plugin/nf-pregex'
 
 /*
@@ -104,22 +105,22 @@ def parseFilenameTraditional(fastq_path) {
  */
 def parseFilenameWithPregex(fastq_path) {
     // Build a readable pattern using nf-pregex
-    // Note: OneOrMore, Either, and quantifiers already create capturing groups
+    // Note: Use Group() to create capturing groups for extraction
     def illuminaPattern = Sequence([
         // Sample name: one or more word characters (capture group 1)
-        OneOrMore(WordChar()),
+        Group(OneOrMore(WordChar())),
         Literal("_S"),
         // Sample number: one or more digits (capture group 2)
-        OneOrMore(Digit()),
+        Group(OneOrMore(Digit())),
         Literal("_L"),
         // Lane: exactly 3 digits (capture group 3)
-        Digit().exactly(3),
+        Group(Digit().exactly(3)),
         Literal("_"),
         // Read direction: R1 or R2 (capture group 4)
-        Either(["R1", "R2"]),
+        Group(Either(["R1", "R2"])),
         Literal("_"),
         // Chunk: exactly 3 digits (capture group 5)
-        Digit().exactly(3),
+        Group(Digit().exactly(3)),
         // Extension: .fastq or .fastq.gz
         Literal(".fastq"),
         Optional(Literal(".gz"))
@@ -202,15 +203,15 @@ workflow {
     With nf-pregex:
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Sequence([
-        OneOrMore(WordChar()),                  // Sample name - Clear!
+        Group(OneOrMore(WordChar())),           // Sample name - Clear!
         Literal("_S"),
-        OneOrMore(Digit()),                     // Sample # - Readable!
+        Group(OneOrMore(Digit())),              // Sample # - Readable!
         Literal("_L"),
-        Digit().exactly(3),                     // Lane - Self-documenting!
+        Group(Digit().exactly(3)),              // Lane - Self-documenting!
         Literal("_"),
-        Either(["R1", "R2"]),                   // Read - Obvious meaning!
+        Group(Either(["R1", "R2"])),            // Read - Obvious meaning!
         Literal("_"),
-        Digit().exactly(3),                     // Chunk
+        Group(Digit().exactly(3)),              // Chunk
         Literal(".fastq"),
         Optional(Literal(".gz"))
     ])
@@ -220,7 +221,7 @@ workflow {
        • Automatic escaping
        • Easy to modify
        • Self-documenting
-       • Capture groups for metadata extraction
+       • Use Group() to create capture groups for metadata extraction
     
     Processing files...
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -263,7 +264,7 @@ workflow.onComplete {
     Compare the approaches:
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Traditional:  /^(.+)_S(\\d+)_L(\\d{3})_(R[12])_(\\d{3})\\.fastq(?:\\.gz)?\$/
-    nf-pregex:    Sequence(OneOrMore(WordChar()), Literal("_S"), ...)
+    nf-pregex:    Sequence(Group(OneOrMore(WordChar())), Literal("_S"), ...)
     
     Which would YOU rather maintain? 🤔
     
