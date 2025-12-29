@@ -134,41 +134,36 @@ Group(Either(["foo", "bar"]))     // → ((foo|bar))
 **Real-World Example - Parsing FASTQ Filenames:**
 
 ```groovy
-include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair } from 'plugin/nf-pregex'
+include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair; CharClass } from 'plugin/nf-pregex'
 
 // Build pattern to capture sample name and read pair
 def pattern = Sequence([
     Group(OneOrMore(WordChar())),  // Group 1: sample name
-    ReadPair(),                     // Matches _R1, _R2, .R1, .R2, etc.
+    CharClass("._"),                // Separator (_ or .) - not captured
+    Group(ReadPair()),              // Group 2: read identifier (R1, R2, 1, 2)
     Literal(".fastq.gz")
 ])
 
-// Convert to regex string
-def regex = pattern.toRegex()
-
-// Use in Nextflow to extract sample name and read info
+// Use pattern directly with Groovy's regex operator
 def filename = "sample_123_R1.fastq.gz"
-def matcher = filename =~ regex
+def matcher = filename =~ pattern
 
 if (matcher.find()) {
-    def sampleName = matcher.group(1)     // Group 1: "sample_123"
-    // Extract read pair by removing sample name and extension
-    def readPair = filename
-        .replace(sampleName, '')
-        .replace('.fastq.gz', '')
-        .replaceAll(/[_.]/, '')           // Remove separators
+    def sampleName = matcher.group(1)  // Group 1: "sample_123"
+    def readPair = matcher.group(2)    // Group 2: "R1"
     
-    println "Sample: ${sampleName}"       // → Sample: sample_123
-    println "Read: ${readPair}"           // → Read: R1
+    println "Sample: ${sampleName}"    // → Sample: sample_123
+    println "Read: ${readPair}"        // → Read: R1
 }
 
 // Practical use in Nextflow pipeline
 workflow {
     def fastq_pattern = Sequence([
-        Group(OneOrMore(WordChar())),  // Capture sample name
-        ReadPair(),                     // Match read pair pattern
+        Group(OneOrMore(WordChar())),  // Group 1: sample name
+        CharClass("._"),                // Separator
+        Group(ReadPair()),              // Group 2: read identifier
         Literal(".fastq.gz")
-    ]).toRegex()
+    ])
     
     Channel
         .fromPath("data/*.fastq.gz")
@@ -176,12 +171,8 @@ workflow {
             def m = file.name =~ fastq_pattern
             m.find()
             def sample = m.group(1)    // Extract sample name
-            // Extract read pair from filename
-            def read = file.name
-                .replace(sample, '')
-                .replace('.fastq.gz', '')
-                .replaceAll(/[_.]/, '')
-            return tuple(sample, read, file)
+            def readPair = m.group(2)  // Extract read identifier (R1, R2, 1, 2)
+            return tuple(sample, readPair, file)
         }
         .groupTuple()  // Groups R1/R2 by sample name
         .view()

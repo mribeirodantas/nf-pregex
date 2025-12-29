@@ -176,24 +176,23 @@ class BioinformaticsPatterns {
     }
     
     /**
-     * Matches paired-end read identifiers.
-     * Supports common patterns: _R1, _R2, .R1, .R2, _1, _2, .1, .2
+     * Matches paired-end read identifiers without the separator.
+     * Supports: R1, R2, 1, 2
+     * 
+     * Note: This pattern matches ONLY the identifier (R1, R2, 1, 2).
+     * If you need to match the separator (_ or .), add CharClass("._") before ReadPair().
      * 
      * Examples:
-     * - _R1
-     * - _R2
-     * - .1
-     * - .2
+     * - R1
+     * - R2
+     * - 1
+     * - 2
      * 
-     * @return A pattern matching read pair identifiers
+     * @return A pattern matching read pair identifiers (without separator)
      */
     static PRegEx ReadPair() {
-        // Matches read pair indicators like _R1, _R2, _1, _2, .R1, .R2, .1, .2
-        // Only underscore and dot are valid separators (not dash)
-        return new Sequence([
-            new CharClass("._", false),
-            new Either(['R1', 'R2', '1', '2'])
-        ])
+        // Matches only the read pair identifier (R1, R2, 1, 2) without separators
+        return new Either(['R1', 'R2', '1', '2'])
     }
     
     /**
