@@ -134,13 +134,12 @@ Group(Either(["foo", "bar"]))     // → ((foo|bar))
 **Real-World Example - Parsing FASTQ Filenames:**
 
 ```groovy
-include { Sequence; Literal; Group; OneOrMore; WordChar; CharClass; Either } from 'plugin/nf-pregex'
+include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair } from 'plugin/nf-pregex'
 
 // Build pattern to capture sample name and read pair
 def pattern = Sequence([
-    Group(OneOrMore(WordChar())),              // Group 1: sample name
-    CharClass("._"),                            // Separator: _ or .
-    Group(Either(["R1", "R2", "1", "2"])),     // Group 2: read pair ID
+    Group(OneOrMore(WordChar())),  // Group 1: sample name
+    ReadPair(),                     // Matches _R1, _R2, .R1, .R2, etc.
     Literal(".fastq.gz")
 ])
 
@@ -152,19 +151,22 @@ def filename = "sample_123_R1.fastq.gz"
 def matcher = filename =~ regex
 
 if (matcher.find()) {
-    def sampleName = matcher.group(1)  // Group 1: "sample_123"
-    def readPair = matcher.group(2)    // Group 2: "R1"
+    def sampleName = matcher.group(1)     // Group 1: "sample_123"
+    // Extract read pair by removing sample name and extension
+    def readPair = filename
+        .replace(sampleName, '')
+        .replace('.fastq.gz', '')
+        .replaceAll(/[_.]/, '')           // Remove separators
     
-    println "Sample: ${sampleName}"    // → Sample: sample_123
-    println "Read: ${readPair}"        // → Read: R1
+    println "Sample: ${sampleName}"       // → Sample: sample_123
+    println "Read: ${readPair}"           // → Read: R1
 }
 
 // Practical use in Nextflow pipeline
 workflow {
     def fastq_pattern = Sequence([
-        Group(OneOrMore(WordChar())),              // Capture sample name
-        CharClass("._"),                            // Match separator
-        Group(Either(["R1", "R2", "1", "2"])),     // Capture read pair
+        Group(OneOrMore(WordChar())),  // Capture sample name
+        ReadPair(),                     // Match read pair pattern
         Literal(".fastq.gz")
     ]).toRegex()
     
@@ -174,7 +176,11 @@ workflow {
             def m = file.name =~ fastq_pattern
             m.find()
             def sample = m.group(1)    // Extract sample name
-            def read = m.group(2)      // Extract read pair (R1/R2)
+            // Extract read pair from filename
+            def read = file.name
+                .replace(sample, '')
+                .replace('.fastq.gz', '')
+                .replaceAll(/[_.]/, '')
             return tuple(sample, read, file)
         }
         .groupTuple()  // Groups R1/R2 by sample name
