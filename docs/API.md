@@ -134,13 +134,13 @@ Group(Either(["foo", "bar"]))     // → ((foo|bar))
 **Real-World Example - Parsing FASTQ Filenames:**
 
 ```groovy
-include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair } from 'plugin/nf-pregex'
+include { Sequence; Literal; Group; OneOrMore; WordChar; CharClass; Either } from 'plugin/nf-pregex'
 
 // Build pattern to capture sample name and read pair
 def pattern = Sequence([
-    Group(OneOrMore(WordChar())),  // Group 1: sample name
-    ReadPair(),                     // _R1 or _R2
-    Group(ReadPair()),             // Group 2: which read pair
+    Group(OneOrMore(WordChar())),              // Group 1: sample name
+    CharClass("._"),                            // Separator: _ or .
+    Group(Either(["R1", "R2", "1", "2"])),     // Group 2: read pair ID
     Literal(".fastq.gz")
 ])
 
@@ -153,17 +153,18 @@ def matcher = filename =~ regex
 
 if (matcher.find()) {
     def sampleName = matcher.group(1)  // Group 1: "sample_123"
-    def readPair = matcher.group(2)    // Group 2: "_R1"
+    def readPair = matcher.group(2)    // Group 2: "R1"
     
     println "Sample: ${sampleName}"    // → Sample: sample_123
-    println "Read: ${readPair}"        // → Read: _R1
+    println "Read: ${readPair}"        // → Read: R1
 }
 
 // Practical use in Nextflow pipeline
 workflow {
     def fastq_pattern = Sequence([
-        Group(OneOrMore(WordChar())),
-        ReadPair(),
+        Group(OneOrMore(WordChar())),              // Capture sample name
+        CharClass("._"),                            // Match separator
+        Group(Either(["R1", "R2", "1", "2"])),     // Capture read pair
         Literal(".fastq.gz")
     ]).toRegex()
     
@@ -172,8 +173,9 @@ workflow {
         .map { file ->
             def m = file.name =~ fastq_pattern
             m.find()
-            def sample = m.group(1)  // Extract captured sample name
-            return tuple(sample, file)
+            def sample = m.group(1)    // Extract sample name
+            def read = m.group(2)      // Extract read pair (R1/R2)
+            return tuple(sample, read, file)
         }
         .groupTuple()  // Groups R1/R2 by sample name
         .view()
