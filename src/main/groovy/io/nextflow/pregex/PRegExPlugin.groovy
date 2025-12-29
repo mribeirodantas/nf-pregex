@@ -14,7 +14,7 @@ import org.pf4j.PluginWrapper
  * - Literal("text") for escaped literal text
  * - Optional(pattern) instead of "(pattern)?"
  * 
- * @author Seqera AI
+ * @author Marcel Ribeiro-Dantas <marcel@seqera.io>
  */
 @Slf4j
 @CompileStatic

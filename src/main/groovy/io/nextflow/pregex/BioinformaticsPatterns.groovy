@@ -10,7 +10,7 @@ import io.nextflow.pregex.PRegEx.*
  * protein sequences, chromosome names, read pair identifiers, and common
  * bioinformatics file extensions.
  * 
- * @author Seqera AI
+ * @author Marcel Ribeiro-Dantas <marcel@seqera.io>
  */
 @CompileStatic
 class BioinformaticsPatterns {

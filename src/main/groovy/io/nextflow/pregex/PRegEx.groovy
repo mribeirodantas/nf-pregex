@@ -8,7 +8,7 @@ import groovy.transform.CompileStatic
  * PRegEx provides a human-readable API for building regular expression patterns.
  * Each pattern can be converted to a standard Java regex string using toString().
  * 
- * @author Seqera AI
+ * @author Marcel Ribeiro-Dantas <marcel@seqera.io>
  */
 @CompileStatic
 abstract class PRegEx {

@@ -12,7 +12,7 @@ import nextflow.plugin.extension.PluginExtensionPoint
  * 
  * include { Either; Literal; Optional } from 'plugin/nf-pregex'
  * 
- * @author Seqera AI
+ * @author Marcel Ribeiro-Dantas <marcel@seqera.io>
  */
 class PRegExExtension extends PluginExtensionPoint {
 
