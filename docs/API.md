@@ -105,6 +105,46 @@ Sequence([
 
 ---
 
+### Group(PRegEx)
+
+Creates a capturing group for the given pattern. This is essential for extracting matched substrings from the input text.
+
+**Syntax:**
+```groovy
+Group(PRegEx pattern)
+```
+
+**Parameters:**
+- `pattern` - The PRegEx pattern to capture
+
+**Returns:** PRegEx pattern object with capturing group
+
+**Examples:**
+```groovy
+Group(Digit())                    // → (\d)
+Group(Literal("test"))            // → (test)
+
+// Capturing multiple digits
+Group(OneOrMore(Digit()))         // → (\d+)
+
+// Capturing alternatives
+Group(Either(["foo", "bar"]))     // → ((foo|bar))
+```
+
+**Use Cases:**
+- Extracting specific parts of matched text
+- Backreferences in regex replacements
+- Named group extraction with Groovy's regex matcher
+- Building complex patterns with reusable components
+
+**Notes:**
+- Groups are numbered from left to right starting at 1
+- Can be nested for hierarchical capture
+- Essential for `String.find()` and `String.findAll()` operations
+- Combines with quantifiers for powerful pattern matching
+
+---
+
 ## Quantifiers
 
 ### Optional(PRegEx)
