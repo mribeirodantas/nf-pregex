@@ -151,12 +151,12 @@ def regex = pattern.toRegex()
 def filename = "sample_123_R1.fastq.gz"
 def matcher = filename =~ regex
 
-if (matcher.matches()) {
-    def sampleName = matcher[0][1]   // Group 1: "sample_123"
-    def readPair = matcher[0][2]     // Group 2: "_R1"
+if (matcher.find()) {
+    def sampleName = matcher.group(1)  // Group 1: "sample_123"
+    def readPair = matcher.group(2)    // Group 2: "_R1"
     
-    println "Sample: ${sampleName}"   // → Sample: sample_123
-    println "Read: ${readPair}"       // → Read: _R1
+    println "Sample: ${sampleName}"    // → Sample: sample_123
+    println "Read: ${readPair}"        // → Read: _R1
 }
 
 // Practical use in Nextflow pipeline
@@ -171,7 +171,8 @@ workflow {
         .fromPath("data/*.fastq.gz")
         .map { file ->
             def m = file.name =~ fastq_pattern
-            def sample = m[0][1]
+            m.find()
+            def sample = m.group(1)  // Extract captured sample name
             return tuple(sample, file)
         }
         .groupTuple()  // Groups R1/R2 by sample name
@@ -192,7 +193,10 @@ workflow {
 - Can be nested for hierarchical capture
 - Essential for `String.find()` and `String.findAll()` operations
 - Combines with quantifiers for powerful pattern matching
-- In Groovy, access groups with `matcher[0][groupNumber]`
+- **Accessing captured groups in Groovy:**
+  - Use `matcher.group(n)` after calling `matcher.find()` (recommended)
+  - Alternative: `matcher[0][n]` after calling `matcher.matches()`
+  - Group 0: full match, Groups 1+: captured substrings
 
 ---
 
