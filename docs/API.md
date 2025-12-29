@@ -131,17 +131,68 @@ Group(OneOrMore(Digit()))         // → (\d+)
 Group(Either(["foo", "bar"]))     // → ((foo|bar))
 ```
 
+**Real-World Example - Parsing FASTQ Filenames:**
+
+```groovy
+include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair } from 'plugin/nf-pregex'
+
+// Build pattern to capture sample name and read pair
+def pattern = Sequence([
+    Group(OneOrMore(WordChar())),  // Group 1: sample name
+    ReadPair(),                     // _R1 or _R2
+    Group(ReadPair()),             // Group 2: which read pair
+    Literal(".fastq.gz")
+])
+
+// Convert to regex string
+def regex = pattern.toRegex()
+
+// Use in Nextflow to extract sample name and read info
+def filename = "sample_123_R1.fastq.gz"
+def matcher = filename =~ regex
+
+if (matcher.matches()) {
+    def sampleName = matcher[0][1]   // Group 1: "sample_123"
+    def readPair = matcher[0][2]     // Group 2: "_R1"
+    
+    println "Sample: ${sampleName}"   // → Sample: sample_123
+    println "Read: ${readPair}"       // → Read: _R1
+}
+
+// Practical use in Nextflow pipeline
+workflow {
+    def fastq_pattern = Sequence([
+        Group(OneOrMore(WordChar())),
+        ReadPair(),
+        Literal(".fastq.gz")
+    ]).toRegex()
+    
+    Channel
+        .fromPath("data/*.fastq.gz")
+        .map { file ->
+            def m = file.name =~ fastq_pattern
+            def sample = m[0][1]
+            return tuple(sample, file)
+        }
+        .groupTuple()  // Groups R1/R2 by sample name
+        .view()
+}
+```
+
 **Use Cases:**
 - Extracting specific parts of matched text
 - Backreferences in regex replacements
 - Named group extraction with Groovy's regex matcher
 - Building complex patterns with reusable components
+- Parsing structured filenames in bioinformatics workflows
 
 **Notes:**
 - Groups are numbered from left to right starting at 1
+- Group 0 always contains the entire match
 - Can be nested for hierarchical capture
 - Essential for `String.find()` and `String.findAll()` operations
 - Combines with quantifiers for powerful pattern matching
+- In Groovy, access groups with `matcher[0][groupNumber]`
 
 ---
 
