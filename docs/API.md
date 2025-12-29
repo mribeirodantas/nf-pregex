@@ -105,6 +105,100 @@ Sequence([
 
 ---
 
+### Group(PRegEx)
+
+Creates a capturing group for the given pattern. This is essential for extracting matched substrings from the input text.
+
+**Syntax:**
+```groovy
+Group(PRegEx pattern)
+```
+
+**Parameters:**
+- `pattern` - The PRegEx pattern to capture
+
+**Returns:** PRegEx pattern object with capturing group
+
+**Examples:**
+```groovy
+Group(Digit())                    // → (\d)
+Group(Literal("test"))            // → (test)
+
+// Capturing multiple digits
+Group(OneOrMore(Digit()))         // → (\d+)
+
+// Capturing alternatives
+Group(Either(["foo", "bar"]))     // → ((foo|bar))
+```
+
+**Real-World Example - Parsing FASTQ Filenames:**
+
+```groovy
+include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair; CharClass } from 'plugin/nf-pregex'
+
+// Build pattern to capture sample name and read pair
+def pattern = Sequence([
+    Group(OneOrMore(WordChar())),  // Group 1: sample name
+    CharClass("._"),                // Separator (_ or .) - not captured
+    Group(ReadPair()),              // Group 2: read identifier (R1, R2, 1, 2)
+    Literal(".fastq.gz")
+])
+
+// Use pattern directly with Groovy's regex operator
+def filename = "sample_123_R1.fastq.gz"
+def matcher = filename =~ pattern
+
+if (matcher.find()) {
+    def sampleName = matcher.group(1)  // Group 1: "sample_123"
+    def readPair = matcher.group(2)    // Group 2: "R1"
+    
+    println "Sample: ${sampleName}"    // → Sample: sample_123
+    println "Read: ${readPair}"        // → Read: R1
+}
+
+// Practical use in Nextflow pipeline
+workflow {
+    def fastq_pattern = Sequence([
+        Group(OneOrMore(WordChar())),  // Group 1: sample name
+        CharClass("._"),                // Separator
+        Group(ReadPair()),              // Group 2: read identifier
+        Literal(".fastq.gz")
+    ])
+    
+    Channel
+        .fromPath("data/*.fastq.gz")
+        .map { file ->
+            def m = file.name =~ fastq_pattern
+            m.find()
+            def sample = m.group(1)    // Extract sample name
+            def readPair = m.group(2)  // Extract read identifier (R1, R2, 1, 2)
+            return tuple(sample, readPair, file)
+        }
+        .groupTuple()  // Groups R1/R2 by sample name
+        .view()
+}
+```
+
+**Use Cases:**
+- Extracting specific parts of matched text
+- Backreferences in regex replacements
+- Named group extraction with Groovy's regex matcher
+- Building complex patterns with reusable components
+- Parsing structured filenames in bioinformatics workflows
+
+**Notes:**
+- Groups are numbered from left to right starting at 1
+- Group 0 always contains the entire match
+- Can be nested for hierarchical capture
+- Essential for `String.find()` and `String.findAll()` operations
+- Combines with quantifiers for powerful pattern matching
+- **Accessing captured groups in Groovy:**
+  - Use `matcher.group(n)` after calling `matcher.find()` (recommended)
+  - Alternative: `matcher[0][n]` after calling `matcher.matches()`
+  - Group 0: full match, Groups 1+: captured substrings
+
+---
+
 ## Quantifiers
 
 ### Optional(PRegEx)
