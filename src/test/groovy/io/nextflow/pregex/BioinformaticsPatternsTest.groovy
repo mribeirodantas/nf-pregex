@@ -267,14 +267,10 @@ class BioinformaticsPatternsTest extends Specification {
         
         where:
         input << [
-            "_R1",
-            "_R2",
-            ".R1",
-            ".R2",
-            "_1",
-            "_2",
-            ".1",
-            ".2"
+            "R1",
+            "R2",
+            "1",
+            "2"
         ]
     }
     
@@ -288,10 +284,12 @@ class BioinformaticsPatternsTest extends Specification {
         
         where:
         input << [
-            "R1",      // no separator
-            "_R3",     // invalid number
-            "_3",      // invalid number
-            ".R0",     // invalid number
+            "_R1",     // includes separator
+            "_R2",     // includes separator
+            ".R1",     // includes separator
+            "R3",      // invalid number
+            "3",       // invalid number
+            "R0",      // invalid number
             "-R1",     // wrong separator
             "_r1",     // lowercase r
             ""         // empty
