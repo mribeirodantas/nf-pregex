@@ -134,34 +134,65 @@ Group(Either(["foo", "bar"]))     // → ((foo|bar))
 **Real-World Example - Parsing FASTQ Filenames:**
 
 ```groovy
-include { Sequence; Literal; Group; OneOrMore; WordChar; ReadPair; CharClass } from 'plugin/nf-pregex'
+include { Sequence; Literal; Group; OneOrMore; ZeroOrMore; AnyChar; ReadPair; CharClass } from 'plugin/nf-pregex'
 
 // Build pattern to capture sample name and read pair
+// This pattern handles complex filenames like:
+// - sample_123_R1.fastq.gz
+// - patient.001.R2.fastq.gz  
+// - sampleA.batch_2_R1.fastq.gz
+//
+// Key insight: By using greedy matching (.+), the regex engine will try to match
+// as much as possible, then backtrack to find the last separator before ReadPair
 def pattern = Sequence([
-    Group(OneOrMore(WordChar())),  // Group 1: sample name
-    CharClass("._"),                // Separator (_ or .) - not captured
-    Group(ReadPair()),              // Group 2: read identifier (R1, R2, 1, 2)
+    Group(OneOrMore(AnyChar())),  // Group 1: sample name (greedy - backtracks to last separator)
+    CharClass("._"),               // Separator (_ or .) - matches either but not captured
+    Group(ReadPair()),             // Group 2: read identifier (R1, R2, 1, 2)
     Literal(".fastq.gz")
 ])
 
-// Use pattern directly with Groovy's regex operator
-def filename = "sample_123_R1.fastq.gz"
-def matcher = filename =~ pattern
+// Simple filename example
+def filename1 = "sample_123_R1.fastq.gz"
+def matcher1 = filename1 =~ pattern
 
-if (matcher.find()) {
-    def sampleName = matcher.group(1)  // Group 1: "sample_123"
-    def readPair = matcher.group(2)    // Group 2: "R1"
+if (matcher1.find()) {
+    def sampleName = matcher1.group(1)  // Group 1: "sample_123"
+    def readPair = matcher1.group(2)    // Group 2: "R1"
     
-    println "Sample: ${sampleName}"    // → Sample: sample_123
-    println "Read: ${readPair}"        // → Read: R1
+    println "Sample: ${sampleName}"     // → Sample: sample_123
+    println "Read: ${readPair}"         // → Read: R1
+}
+
+// Complex filename with multiple separators
+def filename2 = "patient.001.batch_2_R2.fastq.gz"
+def matcher2 = filename2 =~ pattern
+
+if (matcher2.find()) {
+    def sampleName = matcher2.group(1)  // Group 1: "patient.001.batch_2"
+    def readPair = matcher2.group(2)    // Group 2: "R2"
+    
+    println "Sample: ${sampleName}"     // → Sample: patient.001.batch_2
+    println "Read: ${readPair}"         // → Read: R2
+}
+
+// Edge case: dots in sample name
+def filename3 = "sample.456.R1.fastq.gz"
+def matcher3 = filename3 =~ pattern
+
+if (matcher3.find()) {
+    def sampleName = matcher3.group(1)  // Group 1: "sample.456"
+    def readPair = matcher3.group(2)    // Group 2: "R1"
+    
+    println "Sample: ${sampleName}"     // → Sample: sample.456
+    println "Read: ${readPair}"         // → Read: R1
 }
 
 // Practical use in Nextflow pipeline
 workflow {
     def fastq_pattern = Sequence([
-        Group(OneOrMore(WordChar())),  // Group 1: sample name
-        CharClass("._"),                // Separator
-        Group(ReadPair()),              // Group 2: read identifier
+        Group(OneOrMore(AnyChar())),  // Group 1: sample name (greedy with backtracking)
+        CharClass("._"),               // Separator (_ or .)
+        Group(ReadPair()),             // Group 2: read identifier
         Literal(".fastq.gz")
     ])
     
