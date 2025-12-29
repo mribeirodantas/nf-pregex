@@ -228,6 +228,100 @@ workflow {
   - Alternative: `matcher[0][n]` after calling `matcher.matches()`
   - Group 0: full match, Groups 1+: captured substrings
 
+
+### Group(String, PRegEx) - Named Capturing Groups
+
+Creates a named capturing group for the given pattern. Named groups make patterns more readable and maintainable by allowing you to reference captures by descriptive names instead of numeric indices.
+
+**Syntax:**
+```groovy
+Group(String name, PRegEx pattern)
+```
+
+**Parameters:**
+- `name` - The name for the capturing group (must start with a letter, alphanumeric only)
+- `pattern` - The PRegEx pattern to capture
+
+**Returns:** PRegEx pattern object with named capturing group
+
+**Examples:**
+```groovy
+Group('sample', OneOrMore(WordChar()))    // → (?<sample>\w+)
+Group('id', Digit().exactly(3))           // → (?<id>\d{3})
+Group('readpair', ReadPair())             // → (?<readpair>...)
+```
+
+**Real-World Example - Named Groups for FASTQ Parsing:**
+
+```groovy
+include { Sequence; Literal; Group; OneOrMore; AnyChar; ReadPair; CharClass } from 'plugin/nf-pregex'
+
+// Build pattern with named groups for clarity
+def pattern = Sequence([
+    Group('samplename', OneOrMore(AnyChar())),  // Named group: sample identifier
+    CharClass('._'),                             // Separator
+    Group('rp', ReadPair()),                     // Named group: read pair
+    Literal('.fastq.gz')
+])
+
+// Parse Illumina-style filename
+def filename = "sample_123_R1.fastq.gz"
+def matcher = filename =~ pattern
+
+if (matcher.find()) {
+    // Access groups by descriptive names instead of numbers
+    def sampleName = matcher.group('samplename')  // "sample_123"
+    def readPair = matcher.group('rp')            // "R1"
+    
+    println "Sample: ${sampleName}, Read: ${readPair}"
+}
+
+// Complex bioinformatics example - Illumina naming convention
+def illuminaPattern = Sequence([
+    Group('sample', OneOrMore(WordChar())),
+    Literal('_'),
+    Group('lane', Literal('L').then(Digit().exactly(3))),
+    Literal('_'),
+    Group('read', ReadPair()),
+    FastqExtension()
+])
+
+// Practical use in Nextflow pipeline
+workflow {
+    Channel
+        .fromPath("data/*.fastq.gz")
+        .map { file ->
+            def m = file.name =~ illuminaPattern
+            m.find()
+            // Named groups make the code self-documenting
+            return [
+                sample: m.group('sample'),
+                lane: m.group('lane'),
+                read: m.group('read'),
+                file: file
+            ]
+        }
+        .groupTuple(by: [0, 1])  // Group by sample and lane
+        .view()
+}
+```
+
+**Benefits of Named Groups:**
+- **Readability**: Self-documenting code with descriptive names
+- **Maintainability**: No need to count parentheses to find the right group
+- **Refactoring-friendly**: Adding/removing groups doesn't break numeric indices
+- **Bioinformatics workflows**: Perfect for parsing complex sample naming conventions
+
+**Notes:**
+- Named groups can still be accessed by numeric index for backward compatibility
+- Group names must start with a letter and contain only alphanumeric characters
+- Named groups use Java's `(?<name>...)` syntax internally
+- Combines seamlessly with all other PRegEx functions
+- Group 0 still contains the full match
+
+---
+
+
 ---
 
 ## Quantifiers

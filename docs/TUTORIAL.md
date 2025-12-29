@@ -314,9 +314,9 @@ def fastqPattern = Sequence([
     Optional(Literal(".gz"))
 ])
 
-def sampleIdFromFastq = Sequence(
+def sampleIdFromFastq = Sequence([
     OneOrMore(WordChar())
-)
+])
 
 workflow {
     // Input channel with pattern matching
@@ -484,6 +484,94 @@ workflow {
         }
     }
 }
+
+### Using Named Capturing Groups
+
+Named groups allow you to reference captured text by descriptive names instead of numeric indices, making your code more readable and maintainable.
+
+**Basic Syntax:**
+```groovy
+include { Sequence; Group; OneOrMore; WordChar; ReadPair; Literal } from 'plugin/nf-pregex'
+
+// Create pattern with named groups
+def pattern = Sequence([
+    Group('sample', OneOrMore(WordChar())),  // Name this group 'sample'
+    Literal('_'),
+    Group('read', ReadPair())                 // Name this group 'read'
+])
+
+// Use the pattern
+def filename = "sample123_R1.fastq.gz"
+def matcher = filename =~ pattern
+
+if (matcher.find()) {
+    // Access by name - self-documenting!
+    println "Sample: ${matcher.group('sample')}"  // → Sample: sample123
+    println "Read: ${matcher.group('read')}"      // → Read: R1
+    
+    // Can still access by number for compatibility
+    println "Group 1: ${matcher.group(1)}"        // → Group 1: sample123
+}
+```
+
+**Real-World Example - Illumina Filename Parsing:**
+
+```groovy
+include { 
+    Sequence; Group; Literal; OneOrMore; WordChar; Digit; ReadPair; FastqExtension 
+} from 'plugin/nf-pregex'
+
+// Illumina naming: SampleName_S1_L001_R1_001.fastq.gz
+def illuminaPattern = Sequence([
+    Group('sample', OneOrMore(WordChar())),
+    Literal('_S'),
+    Group('samplenumber', OneOrMore(Digit())),
+    Literal('_L'),
+    Group('lane', Digit().exactly(3)),
+    Literal('_'),
+    Group('read', ReadPair()),
+    Literal('_'),
+    Group('segment', Digit().exactly(3)),
+    FastqExtension()
+])
+
+workflow {
+    channel
+        .fromPath("data/*.fastq.gz")
+        .map { file ->
+            def m = file.name =~ illuminaPattern
+            if (m.find()) {
+                // Return a map with descriptive keys
+                return [
+                    sample: m.group('sample'),
+                    sample_num: m.group('samplenumber'),
+                    lane: m.group('lane'),
+                    read: m.group('read'),
+                    segment: m.group('segment'),
+                    file: file
+                ]
+            }
+        }
+        .groupTuple(by: ['sample', 'lane'])  // Group paired reads
+        .view { meta, files ->
+            "Sample ${meta.sample} Lane ${meta.lane}: ${files.size()} files"
+        }
+}
+```
+
+**Benefits:**
+- **No counting parentheses**: Just use descriptive names
+- **Self-documenting**: Code is easier to understand
+- **Refactoring-safe**: Adding groups doesn't break existing references
+- **Perfect for bioinformatics**: Sample IDs, barcodes, lanes, etc.
+
+**Tips:**
+- Group names must start with a letter
+- Use alphanumeric characters only (no spaces or special chars)
+- Choose descriptive names: 'sample' is better than 's' or 'grp1'
+- Mix named and unnamed groups if needed
+
+
 ```
 
 ## Lesson 7: Bioinformatics Patterns
@@ -504,11 +592,11 @@ def fastq = /\w+[._](R1|R2|1|2)\.(?i)(fastq|fq)(\.(?i)gz)?/
 ```groovy
 include { ReadPair; FastqExtension; Sequence; OneOrMore; WordChar } from 'plugin/nf-pregex'
 
-def fastq = Sequence(
+def fastq = Sequence([
     OneOrMore(WordChar()),
     ReadPair(),
     FastqExtension()
-)
+])
 ```
 
 Much clearer and less error-prone!
@@ -528,11 +616,11 @@ include {
 
 workflow {
     // Build pattern for paired-end FASTQ files
-    def fastqPattern = Sequence(
+    def fastqPattern = Sequence([
         OneOrMore(WordChar()),  // Sample name
         ReadPair(),             // _R1, _R2, _1, _2, etc.
         FastqExtension()        // .fastq, .fq, with optional .gz
-    )
+    ])
     
     // Filter files
     channel.fromPath("data/*")
@@ -612,7 +700,7 @@ include {
 
 workflow {
     // Match any common sequencing data file
-    def sequencingFiles = Sequence(
+    def sequencingFiles = Sequence([
         OneOrMore(WordChar()),
         Either(
             FastqExtension(),      // .fastq, .fq

@@ -82,11 +82,11 @@ include {
 
 workflow {
     // Match FASTQ files with read pairs
-    def fastqFiles = Sequence(
+    def fastqFiles = Sequence([
         OneOrMore(WordChar()),
         ReadPair(),
         FastqExtension()
-    )
+    ])
     
     // Filter files by pattern
     channel.fromPath("data/*")
@@ -132,11 +132,11 @@ workflow {
 ```groovy
 include { Sequence; OneOrMore; WordChar; ReadPair; FastqExtension } from 'plugin/nf-pregex'
 
-def pairedEndPattern = Sequence(
+def pairedEndPattern = Sequence([
     OneOrMore(WordChar()),  // sample name
     ReadPair(),             // _R1, _R2, etc.
     FastqExtension()        // .fastq.gz, .fq, etc.
-)
+])
 
 // Matches: sample_R1.fastq.gz, control_R2.fq, test.1.fastq.gz
 ```
