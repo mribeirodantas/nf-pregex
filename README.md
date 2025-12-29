@@ -317,6 +317,78 @@ Matches the end of a line.
 EndOfLine()  // → $
 ```
 
+### Capturing Groups
+
+#### Group(PRegEx)
+Creates a capturing group that can be referenced by numeric index.
+
+```groovy
+def pattern = Sequence([
+    Group(OneOrMore(Digit())),
+    Literal("-"),
+    Group(OneOrMore(WordChar()))
+])
+// → (\d)+-(\w)+
+
+def matcher = "123-abc" =~ pattern
+matcher.group(1)  // → "123"
+matcher.group(2)  // → "abc"
+```
+
+#### Group(String, PRegEx)
+Creates a named capturing group that can be referenced by name or numeric index.
+Group names must start with a letter and contain only alphanumeric characters.
+
+```groovy
+def pattern = Sequence([
+    Group('samplename', OneOrMore(AnyChar())),
+    CharClass('._'),
+    Group('rp', ReadPair()),
+    Literal('.fastq.gz')
+])
+// → (?<samplename>(?:.)+)[._](?<rp>(?:R1|R2|1|2))\.fastq\.gz
+
+def filename = "sample_123_R1.fastq.gz"
+def matcher = filename =~ pattern
+matcher.group('samplename')  // → "sample_123"
+matcher.group('rp')          // → "R1"
+
+// Can also access by numeric index
+matcher.group(1)  // → "sample_123"
+matcher.group(2)  // → "R1"
+```
+
+**Practical Bioinformatics Example:**
+```groovy
+include { Sequence; Group; Literal; OneOrMore; WordChar; Digit; ReadPair; FastqExtension } from 'plugin/nf-pregex'
+
+// Pattern to extract sample ID, lane, and read info from Illumina filenames
+def illuminaPattern = Sequence([
+    Group('sample', OneOrMore(WordChar())),
+    Literal('_'),
+    Group('lane', Literal('L').then(Digit().exactly(3))),
+    Literal('_'),
+    Group('read', ReadPair()),
+    FastqExtension()
+])
+
+// Parse filenames in a channel
+channel.fromPath('data/*.fastq.gz')
+    .map { file ->
+        def matcher = file.name =~ illuminaPattern
+        if (matcher.matches()) {
+            [
+                sample: matcher.group('sample'),
+                lane: matcher.group('lane'),
+                read: matcher.group('read'),
+                file: file
+            ]
+        }
+    }
+    .view()
+// Output: [sample:SampleA, lane:L001, read:R1, file:/path/to/SampleA_L001_R1.fastq.gz]
+```
+
 ### Method Chaining
 
 All pattern objects support fluent method chaining:
