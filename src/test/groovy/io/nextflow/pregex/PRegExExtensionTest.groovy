@@ -344,4 +344,112 @@ class PRegExExtensionTest extends Specification {
         then:
         pattern.toRegex() != null
     }
+
+    // Named Group tests
+
+    def "Group function without name should create unnamed group"() {
+        when:
+        def pattern = extension.Group(extension.Digit())
+
+        then:
+        pattern.toRegex() == '(\\d)'
+    }
+
+    def "Group function with name should create named group"() {
+        when:
+        def pattern = extension.Group('test', extension.Digit())
+
+        then:
+        pattern.toRegex() == '(?<test>\\d)'
+    }
+
+    def "Named Group should work with matcher"() {
+        when:
+        def pattern = extension.Sequence([
+            extension.Group('samplename', extension.OneOrMore(extension.AnyChar())),
+            extension.CharClass('._'),
+            extension.Group('rp', extension.ReadPair()),
+            extension.Literal('.fastq.gz')
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+        def matcher = regex.matcher('sample_123_R1.fastq.gz')
+
+        then:
+        matcher.matches()
+        matcher.group('samplename') == 'sample_123'
+        matcher.group('rp') == 'R1'
+    }
+
+    def "Named Group should work with complex bioinformatics pattern"() {
+        when:
+        def pattern = extension.Sequence([
+            extension.Group('sample', extension.OneOrMore(extension.WordChar())),
+            extension.Literal('_'),
+            extension.Group('lane', extension.CharRange('L', 'L').then(extension.CharRange('0', '9').exactly(3))),
+            extension.Literal('_'),
+            extension.Group('read', extension.ReadPair()),
+            extension.FastqExtension()
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+        def matcher = regex.matcher('SampleA_L001_R1.fastq.gz')
+
+        then:
+        matcher.matches()
+        matcher.group('sample') == 'SampleA'
+        matcher.group('lane') == 'L001'
+        matcher.group('read') == 'R1'
+    }
+
+    def "Named Group should validate group name"() {
+        when:
+        extension.Group('123invalid', extension.Digit())
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "Named Group should reject empty name"() {
+        when:
+        extension.Group('', extension.Digit())
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "Named Group should work with multiple groups and backreference"() {
+        when:
+        def pattern = extension.Sequence([
+            extension.Group('year', extension.Digit().exactly(4)),
+            extension.Literal('-'),
+            extension.Group('month', extension.Digit().exactly(2)),
+            extension.Literal('-'),
+            extension.Group('day', extension.Digit().exactly(2))
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+        def matcher = regex.matcher('2023-12-25')
+
+        then:
+        pattern.toRegex() == '(?<year>\\d{4})\\-(?<month>\\d{2})\\-(?<day>\\d{2})'
+        matcher.matches()
+        matcher.group('year') == '2023'
+        matcher.group('month') == '12'
+        matcher.group('day') == '25'
+    }
+
+    def "Named Group example from user documentation should work"() {
+        when:
+        def pattern = extension.Sequence([
+            extension.Group('samplename', extension.OneOrMore(extension.AnyChar())),
+            extension.CharClass('._'),
+            extension.Group('rp', extension.ReadPair()),
+            extension.Literal('.fastq.gz')
+        ])
+        def filename1 = 'sample_123_R1.fastq.gz'
+        def matcher1 = filename1 =~ pattern
+
+        then:
+        matcher1.matches()
+        matcher1.group('samplename') == 'sample_123'
+        matcher1.group('rp') == 'R1'
+    }
 }

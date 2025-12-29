@@ -233,6 +233,22 @@ class PRegExExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Creates a named capturing group for the given pattern.
+     * This allows extracting matched substrings by name instead of index.
+     * 
+     * Example: Group("year", Digit().exactly(4)) produces "(?<year>\d{4})"
+     * Later can be accessed with: matcher.group('year')
+     * 
+     * @param name The name for the capturing group (must start with letter, alphanumeric only)
+     * @param pattern The pattern to capture
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx Group(String name, PRegEx pattern) {
+        return new PRegEx.NamedGroup(name, pattern)
+    }
+
+    /**
      * Creates a character class pattern that matches any of the specified characters.
      * 
      * Example: CharClass("abc") produces "[abc]"
