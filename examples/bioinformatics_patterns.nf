@@ -67,7 +67,7 @@ workflow {
     ]
     
     testFiles.each { filename, pattern ->
-        def matches = filename =~ /${pattern}/
+        def matches = filename =~ pattern.toPattern()
         println "  ${filename.padRight(20)} → ${matches ? '✓ MATCH' : '✗ NO MATCH'}"
     }
     

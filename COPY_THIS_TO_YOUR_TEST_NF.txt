@@ -1,0 +1,42 @@
+#!/usr/bin/env nextflow
+
+/*
+ * COPY THIS ENTIRE FILE to replace your test.nf
+ * This uses the CORRECT syntax for nf-pregex plugin
+ */
+
+// Import PRegEx functions
+include { 
+    Digit
+    Literal
+    Exactly
+    Group
+} from 'plugin/nf-pregex'
+
+workflow {
+    // Example 1: Simple phone number pattern (###-####)
+    def pattern = Exactly(Digit(), 3)
+        .then(Literal("-"))
+        .then(Exactly(Digit(), 4))
+    
+    println "Pattern 1: ${pattern.toRegex()}"
+    
+    // Example 2: Phone number with named groups
+    def phonePattern = Group("area", Exactly(Digit(), 3))
+        .then(Literal("-"))
+        .then(Group("number", Exactly(Digit(), 4)))
+    
+    println "Pattern 2: ${phonePattern.toRegex()}"
+    
+    // Test the patterns
+    def testNumber = "555-1234"
+    println "\nTesting: ${testNumber}"
+    println "Pattern 1 matches: ${testNumber ==~ pattern.toRegex()}"
+    
+    def matcher = testNumber =~ phonePattern.toRegex()
+    if (matcher.find()) {  // IMPORTANT: Must call find() before accessing groups!
+        println "Pattern 2 matches!"
+        println "  Area code: ${matcher.group('area')}"
+        println "  Number: ${matcher.group('number')}"
+    }
+}

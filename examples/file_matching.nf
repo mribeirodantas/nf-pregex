@@ -53,7 +53,7 @@ workflow {
     
     println "\nFASTQ matching results:"
     testFiles.each { file ->
-        def matches = file =~ /${fastqPattern}/
+        def matches = file =~ fastqPattern.toPattern()
         println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
     

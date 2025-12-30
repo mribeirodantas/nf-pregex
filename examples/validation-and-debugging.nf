@@ -4,14 +4,34 @@
  * Example demonstrating pattern validation, testing, and debugging features
  * in the nf-pregex plugin
  * 
- * Note: This file uses plugin classes (PRegEx) that are loaded
- * at runtime. The linter may report these as undefined when using strict syntax mode,
- * but the code will work correctly when the plugin is installed.
+ * To run this example:
+ *   nextflow run validation-and-debugging.nf -plugins nf-pregex@0.1.0
+ * 
+ * Or add to your nextflow.config:
+ *   plugins {
+ *       id 'nf-pregex@0.1.0'
+ *   }
  */
 
-nextflow.enable.dsl = 2
-
-import io.nextflow.pregex.PRegEx
+// Import PRegEx functions
+include { 
+    Literal
+    Digit
+    WordChar
+    Whitespace
+    Exactly
+    Optional
+    OneOrMore
+    AtLeast
+    Range
+    Either
+    NamedGroup
+    StartOfString
+    EndOfString
+    Group
+    StartOfLine
+    EndOfLine
+} from 'plugin/nf-pregex'
 
 workflow {
     
@@ -27,7 +47,7 @@ workflow {
     println "Example 1: Basic Pattern Testing with test()"
     println "─" * 70
     
-    def digitPattern = PRegEx.digit().oneOrMore()
+    def digitPattern = OneOrMore(Digit())
     
     println "\nPattern: ${digitPattern.toRegex()}"
     println "\nTesting various inputs:"
@@ -53,9 +73,9 @@ workflow {
     println "Example 2: Full String Matching with matches()"
     println "─" * 70
     
-    def phonePattern = PRegEx.digit().exactly(3)
-        .then(PRegEx.literal("-"))
-        .then(PRegEx.digit().exactly(4))
+    def phonePattern = Exactly(Digit(), 3)
+        .then(Literal("-"))
+        .then(Exactly(Digit(), 4))
     
     println "\nPattern: ${phonePattern.toRegex()}"
     println "\nTesting for exact matches:"
@@ -81,11 +101,11 @@ workflow {
     println "Example 3: Extracting Matched Groups with extract()"
     println "─" * 70
     
-    def emailPattern = PRegEx.wordChar().oneOrMore().namedGroup("user")
-        .then(PRegEx.literal("@"))
-        .then(PRegEx.wordChar().oneOrMore().namedGroup("domain"))
-        .then(PRegEx.literal("."))
-        .then(PRegEx.wordChar().atLeast(2).namedGroup("tld"))
+    def emailPattern = NamedGroup(OneOrMore(WordChar()), "user")
+        .then(Literal("@"))
+        .then(NamedGroup(OneOrMore(WordChar()), "domain"))
+        .then(Literal("."))
+        .then(NamedGroup(AtLeast(WordChar(), 2), "tld"))
     
     println "\nPattern: ${emailPattern.toRegex()}"
     
@@ -114,12 +134,12 @@ workflow {
     println "Example 4: Comprehensive Testing with testAll()"
     println "─" * 70
     
-    def urlPattern = PRegEx.literal("http")
-        .then(PRegEx.literal("s").optional())
-        .then(PRegEx.literal("://"))
-        .then(PRegEx.wordChar().oneOrMore())
-        .then(PRegEx.literal("."))
-        .then(PRegEx.wordChar().atLeast(2))
+    def urlPattern = Literal("http")
+        .then(Optional(Literal("s")))
+        .then(Literal("://"))
+        .then(OneOrMore(WordChar()))
+        .then(Literal("."))
+        .then(AtLeast(WordChar(), 2))
     
     println "\nPattern: ${urlPattern.toRegex()}"
     
@@ -143,11 +163,11 @@ workflow {
     println "Example 5: Understanding Patterns with explain()"
     println "─" * 70
     
-    def datePattern = PRegEx.digit().exactly(4).namedGroup("year")
-        .then(PRegEx.literal("-"))
-        .then(PRegEx.digit().exactly(2).namedGroup("month"))
-        .then(PRegEx.literal("-"))
-        .then(PRegEx.digit().exactly(2).namedGroup("day"))
+    def datePattern = NamedGroup(Exactly(Digit(), 4), "year")
+        .then(Literal("-"))
+        .then(NamedGroup(Exactly(Digit(), 2), "month"))
+        .then(Literal("-"))
+        .then(NamedGroup(Exactly(Digit(), 2), "day"))
     
     println "\n${datePattern.explain()}"
     
@@ -159,15 +179,17 @@ workflow {
     println "Example 6: Visualizing Pattern Structure with visualize()"
     println "─" * 70
     
-    def complexPattern = PRegEx.startOfString()
+    def complexPattern = StartOfString()
         .then(
-            PRegEx.literal("user-")
-                .then(PRegEx.digit().oneOrMore().namedGroup("id"))
-                .namedGroup("username")
+            NamedGroup(
+                Literal("user-")
+                    .then(NamedGroup(OneOrMore(Digit()), "id")),
+                "username"
+            )
         )
-        .then(PRegEx.literal("@"))
-        .then(PRegEx.wordChar().oneOrMore().namedGroup("domain"))
-        .then(PRegEx.endOfString())
+        .then(Literal("@"))
+        .then(NamedGroup(OneOrMore(WordChar()), "domain"))
+        .then(EndOfString())
     
     println complexPattern.visualize()
     
@@ -180,13 +202,13 @@ workflow {
     println "─" * 70
     
     // Simple IP address pattern (not production-ready, for demo only)
-    def ipPattern = PRegEx.digit().range(1, 3)
-        .then(PRegEx.literal("."))
-        .then(PRegEx.digit().range(1, 3))
-        .then(PRegEx.literal("."))
-        .then(PRegEx.digit().range(1, 3))
-        .then(PRegEx.literal("."))
-        .then(PRegEx.digit().range(1, 3))
+    def ipPattern = Range(Digit(), 1, 3)
+        .then(Literal("."))
+        .then(Range(Digit(), 1, 3))
+        .then(Literal("."))
+        .then(Range(Digit(), 1, 3))
+        .then(Literal("."))
+        .then(Range(Digit(), 1, 3))
     
     println "\nPattern: ${ipPattern.toRegex()}"
     
@@ -210,11 +232,11 @@ workflow {
     println "Example 8: Bioinformatics File Name Pattern"
     println "─" * 70
     
-    def filePattern = PRegEx.wordChar().oneOrMore().namedGroup("sample")
-        .then(PRegEx.literal("_"))
-        .then(PRegEx.either("R1", "R2").namedGroup("read"))
-        .then(PRegEx.literal(".fastq"))
-        .then(PRegEx.literal(".gz").optional())
+    def filePattern = NamedGroup(OneOrMore(WordChar()), "sample")
+        .then(Literal("_"))
+        .then(NamedGroup(Either("R1", "R2"), "read"))
+        .then(Literal(".fastq"))
+        .then(Optional(Literal(".gz")))
     
     println "\n${filePattern.explain()}"
     println "\n${filePattern.visualize()}"
@@ -243,10 +265,10 @@ workflow {
     println "Example 9: Using Patterns with Channels"
     println "─" * 70
     
-    def samplePattern = PRegEx.literal("sample")
-        .then(PRegEx.digit().oneOrMore().namedGroup("id"))
-        .then(PRegEx.literal("_"))
-        .then(PRegEx.either("R1", "R2").namedGroup("read"))
+    def samplePattern = Literal("sample")
+        .then(NamedGroup(OneOrMore(Digit()), "id"))
+        .then(Literal("_"))
+        .then(NamedGroup(Either("R1", "R2"), "read"))
     
     println "\nPattern: ${samplePattern.toRegex()}"
     
@@ -288,10 +310,10 @@ workflow {
     println "─" * 70
     
     // SRA accession pattern: SRR followed by 6-10 digits
-    def sraPattern = PRegEx.startOfString()
-        .then(PRegEx.literal("SRR"))
-        .then(PRegEx.digit().range(6, 10).namedGroup("accession"))
-        .then(PRegEx.endOfString())
+    def sraPattern = StartOfString()
+        .then(Literal("SRR"))
+        .then(NamedGroup(Range(Digit(), 6, 10), "accession"))
+        .then(EndOfString())
     
     println "\n${sraPattern.explain()}"
     
