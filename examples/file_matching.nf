@@ -53,7 +53,7 @@ workflow {
     
     println "\nFASTQ matching results:"
     testFiles.each { file ->
-        def matches = file =~ fastqPattern.toPattern()
+        def matches = fastqPattern.test(file)
         println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
     
@@ -98,7 +98,7 @@ workflow {
     
     println "\nSample ID matching results:"
     sampleIds.each { id ->
-        def matches = id =~ /${sampleIdPattern}/
+        def matches = sampleIdPattern.test(id)
         println "  ${id}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
     
@@ -145,7 +145,7 @@ workflow {
     
     println "VCF matching results:"
     vcfFiles.each { file ->
-        def matches = file =~ /${vcfPattern}/
+        def matches = vcfPattern.test(file)
         println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
     
@@ -175,7 +175,7 @@ workflow {
     
     println "Modern FASTQ matching:"
     modernFastqFiles.each { file ->
-        def matches = file =~ /${modernFastqPattern}/
+        def matches = modernFastqPattern.test(file)
         println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
     
@@ -200,7 +200,7 @@ workflow {
     
     println "Alignment matching:"
     alignmentFiles.each { file ->
-        def matches = file =~ /${alignmentPattern}/
+        def matches = alignmentPattern.test(file)
         println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
     
@@ -221,13 +221,13 @@ workflow {
     println "\n\nMetadata extraction pattern: ${extractPattern}"
     
     def illuminaFile = "SampleA_L001_R1.fastq.gz"
-    def extractor = illuminaFile =~ extractPattern
+    def extracted = extractPattern.extract(illuminaFile)
     
-    if (extractor.matches()) {
+    if (extracted) {
         println "\nExtracted from '${illuminaFile}':"
-        println "  Sample: ${extractor.group('sample')}"
-        println "  Lane: ${extractor.group('lane')}"
-        println "  Read: ${extractor.group('read')}"
+        println "  Sample: ${extracted['sample']}"
+        println "  Lane: ${extracted['lane']}"
+        println "  Read: ${extracted['read']}"
     }
     
     
@@ -247,5 +247,5 @@ workflow {
     println "Chained pattern: ${chainedPattern}"
     
     def chainTest = "sample_001_R1.fastq.gz"
-    println "Testing '${chainTest}': ${chainTest =~ /${chainedPattern}/ ? 'MATCH' : 'NO MATCH'}"
+    println "Testing '${chainTest}': ${chainedPattern.test(chainTest) ? 'MATCH' : 'NO MATCH'}"
 }
