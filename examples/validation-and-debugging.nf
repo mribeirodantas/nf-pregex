@@ -234,7 +234,7 @@ workflow {
     
     def filePattern = NamedGroup(OneOrMore(WordChar()), "sample")
         .then(Literal("_"))
-        .then(NamedGroup(Either("R1", "R2"), "read"))
+        .then(NamedGroup(Either(["R1", "R2"]), "read"))
         .then(Literal(".fastq"))
         .then(Optional(Literal(".gz")))
     
@@ -268,7 +268,7 @@ workflow {
     def samplePattern = Literal("sample")
         .then(NamedGroup(OneOrMore(Digit()), "id"))
         .then(Literal("_"))
-        .then(NamedGroup(Either("R1", "R2"), "read"))
+        .then(NamedGroup(Either(["R1", "R2"]), "read"))
     
     println "\nPattern: ${samplePattern.toRegex()}"
     
