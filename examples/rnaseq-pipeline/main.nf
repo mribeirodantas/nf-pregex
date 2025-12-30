@@ -248,23 +248,27 @@ workflow {
     // Run parsing and QC process
     PARSE_AND_QC(reads_ch)
 
-    onComplete:
-    def status_icon = workflow.success ? '✅ SUCCESS' : '❌ FAILED'
-    log.info """
-    
-    ╔════════════════════════════════════════════════════════════════╗
-    ║  Parsing Complete!                                             ║
-    ╚════════════════════════════════════════════════════════════════╝
-    
-    Results: ${params.outdir}/parsed_metadata/
-    
-    Compare the approaches:
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Traditional:  /^(.+)_S(\\d+)_L(\\d{3})_(R[12])_(\\d{3})\\.fastq(?:\\.gz)?\$/
-    nf-pregex:    Sequence(Group(OneOrMore(WordChar())), Literal("_S"), ...)
-    
-    Which would YOU rather maintain? 🤔
-    
-    Status: ${status_icon}
-    """
+    /*
+     * Workflow completion handler
+     */
+    workflow.onComplete = {
+        def status_icon = workflow.success ? '✅ SUCCESS' : '❌ FAILED'
+        log.info """
+        
+        ╔════════════════════════════════════════════════════════════════╗
+        ║  Parsing Complete!                                             ║
+        ╚════════════════════════════════════════════════════════════════╝
+        
+        Results: ${params.outdir}/parsed_metadata/
+        
+        Compare the approaches:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Traditional:  /^(.+)_S(\\d+)_L(\\d{3})_(R[12])_(\\d{3})\\.fastq(?:\\.gz)?\$/
+        nf-pregex:    Sequence(Group(OneOrMore(WordChar())), Literal("_S"), ...)
+        
+        Which would YOU rather maintain? 🤔
+        
+        Status: ${status_icon}
+        """
+    }
 }
