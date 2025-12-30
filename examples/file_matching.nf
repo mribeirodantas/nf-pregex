@@ -5,6 +5,9 @@
  * 
  * This shows how to use PRegEx patterns for matching and parsing
  * filenames in typical bioinformatics workflows.
+ * 
+ * To run this example:
+ *   nextflow run file_matching.nf -plugins nf-pregex@0.1.0
  */
 
 include { 
@@ -15,6 +18,11 @@ include {
     WordChar
     Sequence
     Optional
+    ReadPair
+    FastqExtension
+    VcfExtension
+    AlignmentExtension
+    Group
 } from 'plugin/nf-pregex'
 
 workflow {
@@ -140,4 +148,104 @@ workflow {
         def matches = file =~ /${vcfPattern}/
         println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
     }
+    
+    
+    // ========================================
+    // Example 6: Modern bioinformatics patterns
+    // ========================================
+    
+    println "\n\n=== Using Built-in Bioinformatics Patterns ==="
+    
+    // Using ReadPair() instead of manual Either
+    def modernFastqPattern = Sequence([
+        OneOrMore(WordChar()),
+        Literal("_"),
+        ReadPair(),              // Matches _R1, _R2, .1, .2, etc.
+        FastqExtension()         // Matches .fastq.gz, .fq, .fastq, etc.
+    ])
+    
+    println "\nModern FASTQ pattern: ${modernFastqPattern}"
+    
+    def modernFastqFiles = [
+        "sample_R1.fastq.gz",
+        "sample_R2.fq",
+        "test.1.fastq.gz",
+        "control.2.fq.gz"
+    ]
+    
+    println "Modern FASTQ matching:"
+    modernFastqFiles.each { file ->
+        def matches = file =~ /${modernFastqPattern}/
+        println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
+    }
+    
+    
+    // ========================================
+    // Example 7: Alignment file patterns
+    // ========================================
+    
+    def alignmentPattern = Sequence([
+        OneOrMore(WordChar()),
+        AlignmentExtension()     // Matches .bam, .sam, .cram
+    ])
+    
+    println "\n\nAlignment pattern: ${alignmentPattern}"
+    
+    def alignmentFiles = [
+        "sample.bam",
+        "control.sam",
+        "test.cram",
+        "data.vcf"               // Won't match
+    ]
+    
+    println "Alignment matching:"
+    alignmentFiles.each { file ->
+        def matches = file =~ /${alignmentPattern}/
+        println "  ${file}: ${matches ? 'MATCH' : 'NO MATCH'}"
+    }
+    
+    
+    // ========================================
+    // Example 8: Named groups for metadata extraction
+    // ========================================
+    
+    def extractPattern = Sequence([
+        Group('sample', OneOrMore(WordChar())),
+        Literal("_"),
+        Group('lane', Literal("L").then(Digit().exactly(3))),
+        Literal("_"),
+        Group('read', ReadPair()),
+        FastqExtension()
+    ])
+    
+    println "\n\nMetadata extraction pattern: ${extractPattern}"
+    
+    def illuminaFile = "SampleA_L001_R1.fastq.gz"
+    def extractor = illuminaFile =~ extractPattern
+    
+    if (extractor.matches()) {
+        println "\nExtracted from '${illuminaFile}':"
+        println "  Sample: ${extractor.group('sample')}"
+        println "  Lane: ${extractor.group('lane')}"
+        println "  Read: ${extractor.group('read')}"
+    }
+    
+    
+    // ========================================
+    // Example 9: Method chaining
+    // ========================================
+    
+    println "\n\n=== Method Chaining Example ==="
+    
+    def chainedPattern = Literal("sample")
+        .then(Literal("_"))
+        .then(Digit().oneOrMore())
+        .then(Literal("_"))
+        .then(ReadPair())
+        .then(FastqExtension())
+    
+    println "Chained pattern: ${chainedPattern}"
+    
+    def chainTest = "sample_001_R1.fastq.gz"
+    println "Testing '${chainTest}': ${chainTest =~ /${chainedPattern}/ ? 'MATCH' : 'NO MATCH'}"
 }

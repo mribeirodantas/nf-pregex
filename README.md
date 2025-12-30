@@ -24,9 +24,13 @@ def pattern = Sequence([
 ])
 ```
 
-## Installation
+## 🚀 HOW TO: Enable the Plugin
 
-Add the plugin to your Nextflow configuration:
+The nf-pregex plugin is available in the [Nextflow Plugin Registry](https://www.nextflow.io/plugins.html) and can be enabled in three ways:
+
+### Method 1: Configuration File (Recommended)
+
+Add the plugin to your `nextflow.config`:
 
 ```groovy
 plugins {
@@ -34,18 +38,57 @@ plugins {
 }
 ```
 
-Or use it directly in your pipeline with the `-plugins` option:
+Then run your pipeline normally:
+```bash
+nextflow run main.nf
+```
+
+### Method 2: Command Line
+
+Use the plugin without modifying your config:
 
 ```bash
 nextflow run main.nf -plugins nf-pregex@0.1.0
 ```
 
+### Method 3: Environment Variable
+
+Set the plugin globally for all pipeline runs:
+
+```bash
+export NXF_PLUGINS_DEFAULT=nf-pregex@0.1.0
+nextflow run main.nf
+```
+
+### Verifying Plugin Installation
+
+Check that the plugin is loaded correctly:
+
+```bash
+nextflow info
+```
+
+The output should list `nf-pregex` in the plugins section.
+
+### Troubleshooting
+
+**Plugin not found?**
+- Ensure you're using Nextflow version 23.04.0 or later: `nextflow -version`
+- Check plugin spelling and version: `nf-pregex@0.1.0`
+- Try clearing the Nextflow cache: `rm -rf .nextflow/`
+
+**Import errors?**
+- Verify the import path: `include { ... } from 'plugin/nf-pregex'`
+- Ensure the plugin is loaded before the include statement
+
 ## Quick Start
+
+### Basic Pattern Building
 
 ```groovy
 #!/usr/bin/env nextflow
 
-include { Either; Literal; Optional } from 'plugin/nf-pregex'
+include { Either; Literal; Optional; Sequence } from 'plugin/nf-pregex'
 
 workflow {
     // Match "color" or "colour"
@@ -61,6 +104,34 @@ workflow {
     channel.of("color", "colour", "colors")
         .filter { it =~ /${pattern}/ }
         .view()
+}
+```
+
+### Bioinformatics Quick Start
+
+```groovy
+#!/usr/bin/env nextflow
+
+include { 
+    ReadPair
+    FastqExtension
+    Sequence
+    OneOrMore
+    WordChar
+} from 'plugin/nf-pregex'
+
+workflow {
+    // Match paired-end FASTQ files
+    def fastqPattern = Sequence([
+        OneOrMore(WordChar()),  // Sample name
+        ReadPair(),             // _R1, _R2, .1, .2, etc.
+        FastqExtension()        // .fastq.gz, .fq, etc.
+    ])
+    
+    // Process matching files
+    channel.fromPath("data/*")
+        .filter { it.name =~ /${fastqPattern}/ }
+        .view { "Found: ${it.name}" }
 }
 ```
 
