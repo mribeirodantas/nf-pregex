@@ -71,7 +71,7 @@ workflow {
     
     // Filter files matching our pattern
     ch
-        .filter { it =~ /${samplePattern}/ }
+        .filter { it =~ samplePattern.toPattern() }
         .view { "Matched: $it" }
     
     // Example 7: Email-like pattern

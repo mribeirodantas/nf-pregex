@@ -219,6 +219,30 @@ class PRegExExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Creates a pattern that matches the start of a string.
+     * 
+     * Example: StartOfString() produces "\\A"
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx StartOfString() {
+        return new PRegEx.StartOfString()
+    }
+
+    /**
+     * Creates a pattern that matches the end of a string.
+     * 
+     * Example: EndOfString() produces "\\z"
+     * 
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx EndOfString() {
+        return new PRegEx.EndOfString()
+    }
+
+    /**
      * Creates a capturing group for the given pattern.
      * This is essential for extracting matched substrings from the input.
      * 
@@ -245,6 +269,21 @@ class PRegExExtension extends PluginExtensionPoint {
      */
     @Function
     PRegEx Group(String name, PRegEx pattern) {
+        return new PRegEx.NamedGroup(name, pattern)
+    }
+
+    /**
+     * Creates a named capturing group for the given pattern.
+     * This is an alias for Group(String, PRegEx) for better readability.
+     * 
+     * Example: NamedGroup(OneOrMore(Digit()), "id") produces "(?<id>\d+)"
+     * 
+     * @param pattern The pattern to capture
+     * @param name The name for the capturing group
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx NamedGroup(PRegEx pattern, String name) {
         return new PRegEx.NamedGroup(name, pattern)
     }
 

@@ -67,7 +67,7 @@ workflow {
     ]
     
     testFiles.each { filename, pattern ->
-        def matches = filename =~ /${pattern}/
+        def matches = pattern.test(filename)
         println "  ${filename.padRight(20)} → ${matches ? '✓ MATCH' : '✗ NO MATCH'}"
     }
     
@@ -97,7 +97,7 @@ workflow {
     println "Pattern: ${readPairPattern}\n"
     
     readPairFiles.each { file ->
-        def matches = file =~ /${readPairPattern}/
+        def matches = readPairPattern.test(file)
         println "  ${file.padRight(25)} → ${matches ? '✓ MATCH' : '✗ NO MATCH'}"
     }
     
@@ -119,14 +119,16 @@ workflow {
     ]
     
     println "Chromosome() - flexible (with or without 'chr'):\n"
+    def chromosomePattern = Chromosome()
     chromosomes.each { chr ->
-        def matches = chr =~ /${Chromosome()}/
+        def matches = chromosomePattern.test(chr)
         println "  ${chr.padRight(10)} → ${matches ? '✓ MATCH' : '✗ NO MATCH'}"
     }
     
     println "\n\nStrictChromosome() - requires 'chr' prefix:\n"
+    def strictChromosomePattern = StrictChromosome()
     chromosomes.each { chr ->
-        def matches = chr =~ /${StrictChromosome()}/
+        def matches = strictChromosomePattern.test(chr)
         println "  ${chr.padRight(10)} → ${matches ? '✓ MATCH' : '✗ NO MATCH'}"
     }
     
@@ -146,11 +148,15 @@ workflow {
         "ACGT123": "Invalid (contains numbers)"
     ]
     
+    def dnaPattern = DNASequence()
+    def strictDnaPattern = StrictDNASequence()
+    def dnaAmbiguityPattern = DNASequenceWithAmbiguity()
+    
     sequences.each { seq, description ->
         println "\n${description}: ${seq}"
-        println "  DNASequence(): ${seq =~ /${DNASequence()}/ ? '✓' : '✗'}"
-        println "  StrictDNASequence(): ${seq =~ /${StrictDNASequence()}/ ? '✓' : '✗'}"
-        println "  DNASequenceWithAmbiguity(): ${seq =~ /${DNASequenceWithAmbiguity()}/ ? '✓' : '✗'}"
+        println "  DNASequence(): ${dnaPattern.test(seq) ? '✓' : '✗'}"
+        println "  StrictDNASequence(): ${strictDnaPattern.test(seq) ? '✓' : '✗'}"
+        println "  DNASequenceWithAmbiguity(): ${dnaAmbiguityPattern.test(seq) ? '✓' : '✗'}"
     }
     
     
@@ -178,12 +184,12 @@ workflow {
     ]
     
     illuminaFiles.each { filename ->
-        def matcher = filename =~ illuminaPattern
-        if (matcher.matches()) {
+        def extracted = illuminaPattern.extract(filename)
+        if (extracted) {
             println "${filename}:"
-            println "  Sample: ${matcher.group('sample')}"
-            println "  Lane: ${matcher.group('lane')}"
-            println "  Read: ${matcher.group('read')}"
+            println "  Sample: ${extracted['sample']}"
+            println "  Lane: ${extracted['lane']}"
+            println "  Read: ${extracted['read']}"
         }
     }
     
@@ -210,11 +216,11 @@ workflow {
     ]
     
     vcfFiles.each { file ->
-        def matcher = file =~ vcfChrPattern
-        if (matcher.matches()) {
+        def extracted = vcfChrPattern.extract(file)
+        if (extracted) {
             println "${file}:"
-            println "  Chromosome: ${matcher.group('chr')}"
-            println "  Type: ${matcher.group('type')}"
+            println "  Chromosome: ${extracted['chr']}"
+            println "  Type: ${extracted['type']}"
         }
     }
     
@@ -242,7 +248,7 @@ workflow {
     
     println "Testing files:"
     chainedFiles.each { file ->
-        println "  ${file.padRight(30)} → ${file =~ /${chainedPattern}/ ? '✓ MATCH' : '✗ NO MATCH'}"
+        println "  ${file.padRight(30)} → ${chainedPattern.test(file) ? '✓ MATCH' : '✗ NO MATCH'}"
     }
     
     
@@ -275,15 +281,15 @@ workflow {
     
     println "Extracting metadata:"
     pipelineFiles.each { file ->
-        def matcher = file =~ pipelinePattern
-        if (matcher.matches()) {
+        def extracted = pipelinePattern.extract(file)
+        if (extracted) {
             println "\n${file}:"
-            println "  Sample: ${matcher.group('sample')}"
-            if (matcher.group('condition')) {
-                println "  Condition: ${matcher.group('condition')}"
+            println "  Sample: ${extracted['sample']}"
+            if (extracted['condition']) {
+                println "  Condition: ${extracted['condition']}"
             }
-            println "  Replicate: ${matcher.group('replicate')}"
-            println "  Read: ${matcher.group('read')}"
+            println "  Replicate: ${extracted['replicate']}"
+            println "  Read: ${extracted['read']}"
         }
     }
     
