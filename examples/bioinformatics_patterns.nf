@@ -38,6 +38,7 @@ include {
     WordChar
     Digit
     Group
+    Either
 } from 'plugin/nf-pregex'
 
 workflow {
