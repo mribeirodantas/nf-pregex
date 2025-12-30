@@ -5,10 +5,27 @@
  * 
  * This example shows how to use PRegEx pattern builders instead of
  * traditional regex strings for more readable pattern matching.
+ * 
+ * To run this example:
+ *   nextflow run basic_usage.nf -plugins nf-pregex@0.1.0
+ * 
+ * Or add to your nextflow.config:
+ *   plugins {
+ *       id 'nf-pregex@0.1.0'
+ *   }
  */
 
 // Import PRegEx functions
-include { Either; Literal; Optional; OneOrMore; Digit; WordChar; Sequence } from 'plugin/nf-pregex'
+include { 
+    Either
+    Literal
+    Optional
+    OneOrMore
+    Digit
+    WordChar
+    Sequence
+    Group
+} from 'plugin/nf-pregex'
 
 workflow {
     
@@ -80,4 +97,28 @@ workflow {
         Optional(Literal("_final"))
     ])
     println "Complex pattern: ${complexPattern}"
+    
+    // Example 10: Using named groups for data extraction
+    def namedGroupPattern = Sequence([
+        Group('sample', OneOrMore(WordChar())),
+        Literal("_"),
+        Group('read', Either(["R1", "R2"])),
+        Literal(".fastq.gz")
+    ])
+    println "\nNamed group pattern: ${namedGroupPattern}"
+    
+    def filename = "test_sample_R1.fastq.gz"
+    def matcher = filename =~ namedGroupPattern
+    if (matcher.matches()) {
+        println "Matched filename: ${filename}"
+        println "  Sample: ${matcher.group('sample')}"
+        println "  Read: ${matcher.group('read')}"
+    }
+    
+    // Example 11: Method chaining for cleaner code
+    def chainedComplex = Literal("prefix")
+        .then(Literal("_"))
+        .then(WordChar().oneOrMore())
+        .then(Literal(".txt"))
+    println "\nChained complex pattern: ${chainedComplex}"
 }
