@@ -14,3 +14,6 @@ test:
 
 check:
 	./gradlew check
+
+release:
+	./gradlew releasePlugin
