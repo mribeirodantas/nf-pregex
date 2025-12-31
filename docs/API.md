@@ -9,6 +9,14 @@ Complete API reference for all PRegEx pattern builders.
 - [Character Classes](#character-classes)
 - [Anchors](#anchors)
 - [Method Chaining](#method-chaining)
+- [Pattern Testing & Validation](#pattern-testing--validation)
+  - [test()](#test)
+  - [matches()](#matches)
+  - [extract()](#extract)
+  - [testAll()](#testall)
+- [Pattern Debugging & Visualization](#pattern-debugging--visualization)
+  - [explain()](#explain)
+  - [visualize()](#visualize)
 - [Bioinformatics Patterns](#bioinformatics-patterns)
   - [Sequence Patterns](#sequence-patterns)
   - [Genomic Identifiers](#genomic-identifiers)
@@ -822,6 +830,627 @@ Creates a capturing group from the pattern.
 ```groovy
 Either(["foo", "bar"]).group()      // → ((foo|bar))
 ```
+
+---
+
+## Pattern Testing & Validation
+
+All PRegEx patterns include built-in testing and validation methods to help verify that your patterns work as expected. These methods allow you to test patterns against input strings, extract matched groups, and run comprehensive test suites.
+
+### test()
+
+Tests if this pattern matches anywhere in the given input string.
+
+**Syntax:**
+```groovy
+pattern.test(String input)
+```
+
+**Parameters:**
+- `input` - The string to test against this pattern
+
+**Returns:** `boolean` - `true` if the pattern matches, `false` otherwise
+
+**Examples:**
+```groovy
+include { Sequence; Literal; OneOrMore; Digit } from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Literal("sample"),
+    OneOrMore(Digit())
+])
+
+pattern.test("sample123")        // → true
+pattern.test("sample")           // → false
+pattern.test("test_sample456")   // → true (matches substring)
+pattern.test(null)               // → false
+```
+
+**Use Case:**
+```groovy
+// Filter files in a channel
+channel.fromPath("data/*")
+    .filter { file -> 
+        def pattern = Sequence([ReadPair(), FastqExtension()])
+        pattern.test(file.name)
+    }
+    .view()
+```
+
+**Notes:**
+- Uses `find()` internally, so it matches substrings
+- Returns `false` for `null` input
+- Use `matches()` if you need to match the entire string
+
+---
+
+### matches()
+
+Tests if this pattern matches the **entire** input string from start to end.
+
+**Syntax:**
+```groovy
+pattern.matches(String input)
+```
+
+**Parameters:**
+- `input` - The string to test against this pattern
+
+**Returns:** `boolean` - `true` if the pattern matches the entire string, `false` otherwise
+
+**Examples:**
+```groovy
+include { Sequence; Literal; OneOrMore; Digit } from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Literal("sample"),
+    OneOrMore(Digit())
+])
+
+pattern.matches("sample123")        // → true
+pattern.matches("test_sample456")   // → false (has prefix)
+pattern.matches("sample123_R1")     // → false (has suffix)
+pattern.matches(null)               // → false
+```
+
+**Comparison with test():**
+```groovy
+def emailPattern = Sequence([
+    OneOrMore(WordChar()),
+    Literal("@"),
+    OneOrMore(WordChar()),
+    Literal(".com")
+])
+
+// test() matches substrings
+emailPattern.test("contact: user@example.com today")  // → true
+
+// matches() requires full match
+emailPattern.matches("user@example.com")              // → true
+emailPattern.matches("contact: user@example.com")     // → false
+```
+
+**Use Case:**
+```groovy
+// Validate entire filename format
+def filenamePattern = Sequence([
+    StartOfLine(),
+    OneOrMore(WordChar()),
+    ReadPair(),
+    FastqExtension(),
+    EndOfLine()
+])
+
+if (filenamePattern.matches("sample_R1.fastq.gz")) {
+    println "Valid filename format!"
+}
+```
+
+---
+
+### extract()
+
+Extracts matched groups from the input string, including both numbered and named capture groups.
+
+**Syntax:**
+```groovy
+pattern.extract(String input)
+```
+
+**Parameters:**
+- `input` - The string to extract matches from
+
+**Returns:** `Map<String, String>` - Map containing matched groups, or `null` if no match
+
+**Map Keys:**
+- `'0'` or `'match'` - Full matched string
+- `'1'`, `'2'`, `'3'`, ... - Numbered capture groups
+- Named group keys - Named capture groups (if defined)
+
+**Examples:**
+
+**Basic Extraction:**
+```groovy
+include { Sequence; Group; OneOrMore; Digit; Literal; WordChar } from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Group(OneOrMore(WordChar())),
+    Literal("_"),
+    Group(OneOrMore(Digit()))
+])
+
+def result = pattern.extract("sample_123")
+println result['0']      // → "sample_123" (full match)
+println result['match']  // → "sample_123" (same as '0')
+println result['1']      // → "sample"
+println result['2']      // → "123"
+```
+
+**Named Groups:**
+```groovy
+include { Sequence; Group; OneOrMore; MultiRange; Literal; Digit; Either } from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Group('sample', OneOrMore(MultiRange("'A'-'Z', 'a'-'z', '0'-'9', '_', '-'"))),
+    Literal("_"),
+    Group('lane', Sequence([Literal("L"), Digit().exactly(3)])),
+    Literal("_"),
+    Group('read', Sequence([Literal("R"), Either(["1", "2"])]))
+])
+
+def result = pattern.extract("MySample_L001_R2")
+
+// Access by name (preferred)
+println result['sample']  // → "MySample"
+println result['lane']    // → "L001"
+println result['read']    // → "R2"
+
+// Also accessible by number
+println result['1']       // → "MySample"
+println result['2']       // → "L001"
+println result['3']       // → "R2"
+```
+
+**Practical Use Case:**
+```groovy
+// Parse Illumina FASTQ filenames
+include { 
+    Sequence; Group; OneOrMore; WordChar
+    Literal; Digit; ReadPair; FastqExtension 
+} from 'plugin/nf-pregex'
+
+def illuminaPattern = Sequence([
+    Group('sample', OneOrMore(WordChar())),
+    Literal("_"),
+    Group('lane', Sequence([Literal("L"), Digit().exactly(3)])),
+    Literal("_"),
+    Group('read', ReadPair()),
+    FastqExtension()
+])
+
+channel.fromPath("data/*.fastq.gz")
+    .map { file ->
+        def info = illuminaPattern.extract(file.name)
+        if (info) {
+            [
+                sample: info['sample'],
+                lane: info['lane'],
+                read: info['read'],
+                file: file
+            ]
+        } else {
+            null
+        }
+    }
+    .filter { it != null }
+    .view { "Processing ${it.sample} ${it.lane} ${it.read}" }
+```
+
+**Notes:**
+- Returns `null` if no match is found
+- Named groups are accessible by their string names
+- All groups are also accessible by numeric index (starting from 1)
+- Group `'0'` and `'match'` both contain the full matched string
+
+---
+
+### testAll()
+
+Tests this pattern against multiple test cases and generates a comprehensive test report.
+
+**Syntax:**
+```groovy
+pattern.testAll(Map<String, Boolean> testCases)
+```
+
+**Parameters:**
+- `testCases` - Map where keys are test strings and values are expected match results (`true` = should match, `false` = should not match)
+
+**Returns:** `TestReport` object with detailed results
+
+**TestReport Methods:**
+- `report()` - Returns formatted string report
+- `getPassed()` - Number of passing tests
+- `getFailed()` - Number of failing tests
+- `getTotal()` - Total number of tests
+- `isAllPassed()` - Whether all tests passed
+
+**Examples:**
+
+**Basic Testing:**
+```groovy
+include { Sequence; Literal; Either; OneOrMore; WordChar } from 'plugin/nf-pregex'
+
+def emailPattern = Sequence([
+    OneOrMore(WordChar()),
+    Literal("@"),
+    OneOrMore(WordChar()),
+    Literal("."),
+    Either(["com", "org", "edu"])
+])
+
+def report = emailPattern.testAll([
+    "user@example.com": true,      // Should match
+    "admin@test.org": true,         // Should match
+    "contact@site.edu": true,       // Should match
+    "invalid@test.xyz": false,      // Should NOT match
+    "notanemail": false,            // Should NOT match
+    "@invalid.com": false           // Should NOT match
+])
+
+println report.report()
+```
+
+**Output:**
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║  Test Report                                                         ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+Pattern: (\w)+@(\w)+\.(com|org|edu)
+──────────────────────────────────────────────────────────────────────
+
+  ✓ [PASS] "user@example.com"
+      Expected: match | Actual: match
+  ✓ [PASS] "admin@test.org"
+      Expected: match | Actual: match
+  ✓ [PASS] "contact@site.edu"
+      Expected: match | Actual: match
+  ✓ [PASS] "invalid@test.xyz"
+      Expected: no match | Actual: no match
+  ✓ [PASS] "notanemail"
+      Expected: no match | Actual: no match
+  ✓ [PASS] "@invalid.com"
+      Expected: no match | Actual: no match
+
+──────────────────────────────────────────────────────────────────────
+Results: 6 passed, 0 failed, 6 total
+Status: ✓ ALL TESTS PASSED
+```
+
+**Bioinformatics Example:**
+```groovy
+include { Sequence; OneOrMore; WordChar; ReadPair; FastqExtension } from 'plugin/nf-pregex'
+
+def fastqPattern = Sequence([
+    OneOrMore(WordChar()),
+    ReadPair(),
+    FastqExtension()
+])
+
+def report = fastqPattern.testAll([
+    "sample_R1.fastq.gz": true,
+    "sample_R2.fq": true,
+    "test.1.fastq": true,
+    "test.2.fq.gz": true,
+    "sample.bam": false,
+    "notafastq.txt": false,
+    "sample_R3.fastq": false
+])
+
+println report.report()
+
+// Check results programmatically
+if (report.isAllPassed()) {
+    println "All tests passed! Pattern is working correctly."
+} else {
+    println "Some tests failed. ${report.getFailed()} out of ${report.getTotal()} tests."
+}
+```
+
+**Use Case - Pattern Development:**
+```groovy
+// Test pattern during development
+def vcfPattern = Sequence([
+    Chromosome(),
+    Literal("_variants"),
+    VcfExtension()
+])
+
+def tests = [
+    "chr1_variants.vcf": true,
+    "chr22_variants.vcf.gz": true,
+    "chrX_variants.bcf": true,
+    "invalid_variants.vcf": false,
+    "chr1.vcf": false
+]
+
+def report = vcfPattern.testAll(tests)
+println report.report()
+
+// Only proceed if pattern works correctly
+assert report.isAllPassed() : "Pattern validation failed!"
+```
+
+**Notes:**
+- Great for test-driven development of patterns
+- Provides visual feedback with ✓/✗ symbols
+- Returns detailed report with pass/fail statistics
+- Can be used in assertions to ensure pattern correctness
+
+---
+
+## Pattern Debugging & Visualization
+
+When working with complex patterns, it's helpful to understand their structure and behavior. These debugging methods provide human-readable explanations and visual representations of your patterns.
+
+### explain()
+
+Provides a human-readable explanation of the pattern structure and what it matches.
+
+**Syntax:**
+```groovy
+pattern.explain()
+```
+
+**Returns:** `String` - Formatted explanation of the pattern
+
+**Examples:**
+
+**Simple Pattern:**
+```groovy
+include { Sequence; Literal; OneOrMore; Digit } from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Literal("sample"),
+    OneOrMore(Digit())
+])
+
+println pattern.explain()
+```
+
+**Output:**
+```
+Pattern: sample(\d)+
+══════════════════════════════════════════════════════════════════════
+
+Pattern Type: Sequence
+
+Breakdown:
+• Sequence of patterns
+  • Literal text: "sample"
+  • One or more of:
+    • Any digit (0-9)
+
+══════════════════════════════════════════════════════════════════════
+This pattern will match strings containing: patterns matching: sample(\d)+
+```
+
+**Complex Pattern:**
+```groovy
+include { 
+    Sequence; Group; OneOrMore; WordChar
+    Literal; Either; FastqExtension 
+} from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Group(OneOrMore(WordChar())),
+    Literal("_"),
+    Either(["R1", "R2"]),
+    FastqExtension()
+])
+
+println pattern.explain()
+```
+
+**Output:**
+```
+Pattern: (\w)+_(R1|R2)(?:\.fastq|\.fq)(?:\.gz)?
+══════════════════════════════════════════════════════════════════════
+
+Pattern Type: Sequence
+
+Breakdown:
+• Sequence of patterns
+  • Capturing group:
+    • One or more of:
+      • Any word character (a-z, A-Z, 0-9, _)
+  • Literal text: "_"
+  • One of: R1, R2
+  • Sequence of patterns
+    • One of: .fastq, .fq
+    • Optional:
+      • Literal text: ".gz"
+
+══════════════════════════════════════════════════════════════════════
+This pattern will match strings containing: patterns matching: (\w)+_(R1|R2)(?:\.fastq|\.fq)(?:\.gz)?
+```
+
+**Use Cases:**
+```groovy
+// Document your pattern
+def pattern = complexBioinformaticsPattern()
+println pattern.explain()  // Save this to documentation
+
+// Debug pattern during development
+def testPattern = Sequence([...])
+println testPattern.explain()  // Understand what you built
+
+// Code review - explain pattern to team members
+def reviewPattern = parseIlluminaFilename()
+println reviewPattern.explain()  // Clear documentation for reviewers
+```
+
+**Notes:**
+- Shows the full regex pattern at the top
+- Breaks down pattern into components
+- Indented hierarchy shows pattern structure
+- Helpful for documentation and debugging
+
+---
+
+### visualize()
+
+Creates an ASCII tree visualization of the pattern structure, making it easy to understand complex nested patterns.
+
+**Syntax:**
+```groovy
+pattern.visualize()
+```
+
+**Returns:** `String` - ASCII tree representation of the pattern
+
+**Examples:**
+
+**Simple Pattern:**
+```groovy
+include { Sequence; Literal; OneOrMore; Digit } from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Literal("sample"),
+    OneOrMore(Digit())
+])
+
+println pattern.visualize()
+```
+
+**Output:**
+```
+Pattern Structure:
+══════════════════════════════════════════════════════════════════════
+└── Sequence of patterns
+    ├── Literal text: "sample"
+    └── One or more of:
+        └── Any digit (0-9)
+══════════════════════════════════════════════════════════════════════
+Regex: sample(\d)+
+```
+
+**Complex Pattern:**
+```groovy
+include { 
+    Sequence; Group; OneOrMore; MultiRange
+    Literal; Digit; Either; FastqExtension 
+} from 'plugin/nf-pregex'
+
+def pattern = Sequence([
+    Group(OneOrMore(MultiRange("'A'-'Z', 'a'-'z', '0'-'9', '_'"))),
+    Literal("_"),
+    Group(Sequence([Literal("L"), Digit().exactly(3)])),
+    Literal("_"),
+    Group(Either(["R1", "R2"])),
+    FastqExtension()
+])
+
+println pattern.visualize()
+```
+
+**Output:**
+```
+Pattern Structure:
+══════════════════════════════════════════════════════════════════════
+└── Sequence of patterns
+    ├── Capturing group:
+    │   └── One or more of:
+    │       └── Character class: [A-Za-z0-9_]
+    ├── Literal text: "_"
+    ├── Capturing group:
+    │   └── Sequence of patterns
+    │       ├── Literal text: "L"
+    │       └── Exactly 3 times:
+    │           └── Any digit (0-9)
+    ├── Literal text: "_"
+    ├── Capturing group:
+    │   └── One of: R1, R2
+    └── Sequence of patterns
+        ├── One of: .fastq, .fq
+        └── Optional:
+            └── Literal text: ".gz"
+══════════════════════════════════════════════════════════════════════
+Regex: ([A-Za-z0-9_]+)_(L(\d){3})_(R1|R2)(?:\.fastq|\.fq)(?:\.gz)?
+```
+
+**Comparison of both methods:**
+```groovy
+include { 
+    Sequence; Literal; OneOrMore; WordChar
+    Either; Optional 
+} from 'plugin/nf-pregex'
+
+def emailPattern = Sequence([
+    OneOrMore(WordChar()),
+    Literal("@"),
+    OneOrMore(WordChar()),
+    Literal("."),
+    Either(["com", "org", "edu"])
+])
+
+// Get explanation
+println "=== EXPLANATION ==="
+println emailPattern.explain()
+
+// Get visualization
+println "\n=== VISUALIZATION ==="
+println emailPattern.visualize()
+```
+
+**Use Cases:**
+
+**Pattern Documentation:**
+```groovy
+// Generate documentation for your pattern library
+def patterns = [
+    fastq: createFastqPattern(),
+    vcf: createVcfPattern(),
+    bam: createBamPattern()
+]
+
+patterns.each { name, pattern ->
+    println "=== ${name.toUpperCase()} Pattern ==="
+    println pattern.visualize()
+    println ""
+}
+```
+
+**Debugging Complex Patterns:**
+```groovy
+// Build pattern step by step and visualize
+def step1 = OneOrMore(WordChar())
+println "Step 1:"; println step1.visualize()
+
+def step2 = Sequence([step1, Literal("_"), ReadPair()])
+println "Step 2:"; println step2.visualize()
+
+def final = Sequence([step2, FastqExtension()])
+println "Final:"; println final.visualize()
+```
+
+**Code Review:**
+```groovy
+// Help reviewers understand your pattern
+def illuminaPattern = createComplexIlluminaPattern()
+
+println "// Pattern for Illumina FASTQ files:"
+println "// Format: SAMPLE_LANE_READ_INDEX.fastq.gz"
+println illuminaPattern.visualize()
+```
+
+**Notes:**
+- Uses box-drawing characters for clear hierarchy
+- Shows the complete pattern structure
+- Displays final regex at the bottom
+- Perfect for documentation and debugging
+- Especially useful for deeply nested patterns
 
 ---
 
