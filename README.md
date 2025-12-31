@@ -2,33 +2,118 @@
 
 A Nextflow plugin that provides human-readable regex pattern builders, inspired by Python's [pregex](https://github.com/manoss96/pregex) library.
 
-## Overview
+## Summary
 
-Writing regular expressions can be challenging and error-prone. The nf-pregex plugin provides an intuitive API for building regex patterns using method calls instead of cryptic regex syntax.
+Regular expressions are powerful but notoriously difficult to read and maintain. The nf-pregex plugin solves this by providing an intuitive, chainable API for building regex patterns using method calls instead of cryptic syntax. This makes patterns self-documenting, easier to debug, and simpler to modify.
 
-### Before (Traditional Regex)
+### Why nf-pregex?
+
+**Traditional regex is cryptic and error-prone:**
 ```groovy
-def pattern = /sample(\d)+_(R1|R2)\.fastq\.gz/
+// What does this match? 🤔
+def emailPattern = /^[\w\.-]+@[\w\.-]+\.(com|org|edu)$/
 ```
 
-### After (nf-pregex)
+**nf-pregex is readable and self-documenting:**
 ```groovy
-include { Sequence; Literal; OneOrMore; Digit; Either } from 'plugin/nf-pregex'
+include { Sequence; StartOfLine; OneOrMore; WordChar; Literal; Either; EndOfLine } from 'plugin/nf-pregex'
 
-def pattern = Sequence([
-    Literal("sample"),
-    OneOrMore(Digit()),
-    Literal("_"),
-    Either(["R1", "R2"]),
-    Literal(".fastq.gz")
+def emailPattern = Sequence([
+    StartOfLine(),
+    OneOrMore(WordChar()),
+    Literal("@"),
+    OneOrMore(WordChar()),
+    Literal("."),
+    Either(["com", "org", "edu"]),
+    EndOfLine()
 ])
+// Now it's crystal clear! ✓
 ```
 
-## 🚀 HOW TO: Enable the Plugin
+### Real-World Bioinformatics Example
+
+**Without nf-pregex** (traditional regex):
+```groovy
+// Match Illumina paired-end FASTQ files with sample ID, lane, and read info
+// What's the pattern here? Hard to tell! 😵
+def pattern = /^([A-Za-z0-9_-]+)_(L\d{3})_(R[12])_\d{3}\.fastq\.gz$/
+
+channel.fromPath("data/*.fastq.gz")
+    .map { file ->
+        def matcher = file.name =~ pattern
+        if (matcher.matches()) {
+            [
+                sample: matcher.group(1),
+                lane: matcher.group(2),
+                read: matcher.group(3),
+                file: file
+            ]
+        }
+    }
+```
+
+**With nf-pregex** (readable and maintainable):
+```groovy
+include { 
+    Sequence; StartOfLine; Group; OneOrMore; MultiRange
+    Literal; Digit; Either; EndOfLine; FastqExtension 
+} from 'plugin/nf-pregex'
+
+// Build the pattern step by step - easy to understand and modify! 😊
+def pattern = Sequence([
+    StartOfLine(),
+    Group('sample', OneOrMore(MultiRange("'A'-'Z', 'a'-'z', '0'-'9', '_', '-'"))),
+    Literal("_"),
+    Group('lane', Sequence([Literal("L"), Digit().exactly(3)])),
+    Literal("_"),
+    Group('read', Sequence([Literal("R"), Either(["1", "2"])])),
+    Literal("_"),
+    Digit().exactly(3),
+    FastqExtension(),
+    EndOfLine()
+])
+
+channel.fromPath("data/*.fastq.gz")
+    .map { file ->
+        def matcher = file.name =~ pattern
+        if (matcher.matches()) {
+            [
+                sample: matcher.group('sample'),  // Named groups!
+                lane: matcher.group('lane'),
+                read: matcher.group('read'),
+                file: file
+            ]
+        }
+    }
+```
+
+### Benefits
+
+✅ **Readable** - Patterns are self-documenting and obvious  
+✅ **Maintainable** - Easy to modify without breaking  
+✅ **Reusable** - Build complex patterns from simple components  
+✅ **Safe** - Automatic escaping prevents regex injection  
+✅ **Bioinformatics-Ready** - Pre-built patterns for FASTQ, VCF, BAM, and more  
+✅ **Named Groups** - Extract data with descriptive names instead of numeric indices
+
+## Get Started
+
+### Prerequisites
+
+- Nextflow 23.04.0 or later
+- Java 11 or later
+
+Check your versions:
+```bash
+nextflow -version
+java -version
+```
+
+### Installation
 
 The nf-pregex plugin is available in the [Nextflow Plugin Registry](https://www.nextflow.io/plugins.html) and can be enabled in three ways:
 
-### Method 1: Configuration File (Recommended)
+#### Method 1: Configuration File (Recommended)
 
 Add the plugin to your `nextflow.config`:
 
@@ -43,7 +128,7 @@ Then run your pipeline normally:
 nextflow run main.nf
 ```
 
-### Method 2: Command Line
+#### Method 2: Command Line
 
 Use the plugin without modifying your config:
 
@@ -51,7 +136,7 @@ Use the plugin without modifying your config:
 nextflow run main.nf -plugins nf-pregex@0.1.0
 ```
 
-### Method 3: Environment Variable
+#### Method 3: Environment Variable
 
 Set the plugin globally for all pipeline runs:
 
@@ -60,9 +145,57 @@ export NXF_PLUGINS_DEFAULT=nf-pregex@0.1.0
 nextflow run main.nf
 ```
 
-### Verifying Plugin Installation
+### Quick Start Example
 
-Check that the plugin is loaded correctly:
+Create a simple workflow to test the plugin:
+
+**`test.nf`:**
+```groovy
+#!/usr/bin/env nextflow
+
+plugins {
+    id 'nf-pregex@0.1.0'
+}
+
+include { Sequence; Literal; Either; OneOrMore; WordChar } from 'plugin/nf-pregex'
+
+workflow {
+    // Create a simple email pattern
+    def pattern = Sequence([
+        OneOrMore(WordChar()),
+        Literal("@"),
+        OneOrMore(WordChar()),
+        Literal("."),
+        Either(["com", "org", "edu"])
+    ])
+    
+    println "Pattern: ${pattern}"
+    
+    // Test with some emails
+    def emails = ["test@example.com", "user@domain.org", "invalid@test.xyz"]
+    emails.each { email ->
+        def matches = email =~ /${pattern}/
+        println "${email}: ${matches ? '✓ MATCH' : '✗ NO MATCH'}"
+    }
+}
+```
+
+Run it:
+```bash
+nextflow run test.nf
+```
+
+Expected output:
+```
+Pattern: (\w)+@(\w)+\.(com|org|edu)
+test@example.com: ✓ MATCH
+user@domain.org: ✓ MATCH
+invalid@test.xyz: ✗ NO MATCH
+```
+
+### Verification
+
+Verify the plugin is installed correctly:
 
 ```bash
 nextflow info
@@ -79,61 +212,200 @@ The output should list `nf-pregex` in the plugins section.
 
 **Import errors?**
 - Verify the import path: `include { ... } from 'plugin/nf-pregex'`
-- Ensure the plugin is loaded before the include statement
+- Ensure the plugin is loaded before the include statement (add `plugins { id 'nf-pregex@0.1.0' }` to your script)
 
-## Quick Start
+## Examples
 
-### Basic Pattern Building
+### Example 1: Email Validation
 
+**Problem:** Validate email addresses with common TLDs.
+
+**Traditional Regex:**
 ```groovy
-#!/usr/bin/env nextflow
-
-include { Either; Literal; Optional; Sequence } from 'plugin/nf-pregex'
-
-workflow {
-    // Match "color" or "colour"
-    def pattern = Sequence([
-        Literal("colo"),
-        Optional(Literal("u")),
-        Literal("r")
-    ])
-    
-    println pattern  // Outputs: colo(u)?r
-    
-    // Use in channel operations
-    channel.of("color", "colour", "colors")
-        .filter { it =~ /${pattern}/ }
-        .view()
-}
+// Cryptic and hard to modify 😵
+def emailPattern = /(\w)+@(\w)+\.(com|org|edu)/
 ```
 
-### Bioinformatics Quick Start
+**With nf-pregex:**
+```groovy
+include { Sequence; OneOrMore; Literal; Either; WordChar } from 'plugin/nf-pregex'
+
+// Self-documenting and easy to understand! 😊
+def emailPattern = Sequence([
+    OneOrMore(WordChar()),          // Username
+    Literal("@"),                   // @ symbol
+    OneOrMore(WordChar()),          // Domain
+    Literal("."),                   // Dot
+    Either(["com", "org", "edu"])   // TLD options
+])
+// → (\w)+@(\w)+\.(com|org|edu)
+
+// Use it
+"user@example.com" =~ /${emailPattern}/  // ✓ matches
+```
+
+### Example 2: Paired-End FASTQ Files
+
+**Problem:** Match and parse Illumina paired-end FASTQ files.
+
+**Traditional Regex:**
+```groovy
+// What are we matching here? 🤔
+def pattern = /(\w)+_(R1|R2)\.fastq(\.gz)?/
+```
+
+**With nf-pregex:**
+```groovy
+include { 
+    Sequence; OneOrMore; WordChar; Literal
+    Either; Optional; FastqExtension 
+} from 'plugin/nf-pregex'
+
+// Crystal clear! ✨
+def fastqPattern = Sequence([
+    OneOrMore(WordChar()),          // Sample name
+    Literal("_"),                   // Underscore
+    Either(["R1", "R2"]),           // Read pair indicator
+    Literal(".fastq"),              // Extension
+    Optional(Literal(".gz"))        // Optional compression
+])
+// → (\w)+_(R1|R2)\.fastq(\.gz)?
+
+// Use in a Nextflow channel
+channel.fromPath("data/*.fastq.gz")
+    .filter { it.name =~ /${fastqPattern}/ }
+    .view { "Processing: ${it.name}" }
+```
+
+### Example 3: Complex Bioinformatics Pipeline
+
+**Problem:** Parse Illumina filenames with sample ID, lane, and read information.
+
+**Traditional Regex:**
+```groovy
+// Completely unreadable! 😱
+def pattern = /^([A-Za-z0-9_-]+)_(L\d{3})_(R[12])_\d{3}\.fastq\.gz$/
+
+channel.fromPath("data/*.fastq.gz")
+    .map { file ->
+        def matcher = file.name =~ pattern
+        if (matcher.matches()) {
+            [matcher.group(1), matcher.group(2), matcher.group(3), file]
+        }
+    }
+```
+
+**With nf-pregex:**
+```groovy
+include { 
+    Sequence; StartOfLine; EndOfLine; Group; OneOrMore
+    MultiRange; Literal; Digit; Either; FastqExtension 
+} from 'plugin/nf-pregex'
+
+// Readable, maintainable, and using named groups! 🎉
+def pattern = Sequence([
+    StartOfLine(),
+    Group('sample', OneOrMore(MultiRange("'A'-'Z', 'a'-'z', '0'-'9', '_', '-'"))),
+    Literal("_"),
+    Group('lane', Sequence([Literal("L"), Digit().exactly(3)])),
+    Literal("_"),
+    Group('read', Sequence([Literal("R"), Either(["1", "2"])])),
+    Literal("_"),
+    Digit().exactly(3),
+    FastqExtension(),
+    EndOfLine()
+])
+
+// Now you can use descriptive names instead of numbers!
+channel.fromPath("data/*.fastq.gz")
+    .map { file ->
+        def matcher = file.name =~ pattern
+        if (matcher.matches()) {
+            [
+                sample: matcher.group('sample'),  // Much better than group(1)!
+                lane: matcher.group('lane'),
+                read: matcher.group('read'),
+                file: file
+            ]
+        }
+    }
+    .view { "Sample: ${it.sample}, Lane: ${it.lane}, Read: ${it.read}" }
+```
+
+### Example 4: VCF File Matching
+
+**Problem:** Match VCF files with optional version numbers and compression.
+
+**With nf-pregex:**
+```groovy
+include { 
+    Sequence; OneOrMore; WordChar; Literal
+    Optional; Digit; VcfExtension 
+} from 'plugin/nf-pregex'
+
+def vcfPattern = Sequence([
+    OneOrMore(WordChar()),              // Base filename
+    Optional(Sequence([                 // Optional version
+        Literal(".v"),
+        OneOrMore(Digit())
+    ])),
+    VcfExtension()                      // .vcf, .vcf.gz, .bcf
+])
+
+// Matches: variants.vcf, calls.v2.vcf.gz, filtered.bcf
+channel.fromPath("vcf/*.{vcf,vcf.gz,bcf}")
+    .filter { it.name =~ /${vcfPattern}/ }
+    .view()
+```
+
+### Example 5: Using Pre-Built Bioinformatics Patterns
+
+**Problem:** Quickly match common bioinformatics file types.
 
 ```groovy
-#!/usr/bin/env nextflow
-
 include { 
-    ReadPair
-    FastqExtension
-    Sequence
-    OneOrMore
-    WordChar
+    ReadPair; FastqExtension; AlignmentExtension
+    VcfExtension; Chromosome; DNASequence
+    Sequence; OneOrMore; WordChar; Literal
 } from 'plugin/nf-pregex'
 
 workflow {
-    // Match paired-end FASTQ files
+    // Match paired FASTQ files - super easy!
     def fastqPattern = Sequence([
-        OneOrMore(WordChar()),  // Sample name
-        ReadPair(),             // _R1, _R2, .1, .2, etc.
-        FastqExtension()        // .fastq.gz, .fq, etc.
+        OneOrMore(WordChar()),
+        ReadPair(),           // Matches: _R1, _R2, .1, .2, etc.
+        FastqExtension()      // Matches: .fastq, .fq, .fastq.gz, etc.
     ])
     
-    // Process matching files
-    channel.fromPath("data/*")
-        .filter { it.name =~ /${fastqPattern}/ }
-        .view { "Found: ${it.name}" }
+    // Match alignment files
+    def bamPattern = Sequence([
+        OneOrMore(WordChar()),
+        AlignmentExtension()  // Matches: .bam, .sam, .cram
+    ])
+    
+    // Match VCF with chromosome prefix
+    def vcfPattern = Sequence([
+        Chromosome(),         // Matches: chr1-22, chrX, chrY, chrM
+        Literal("_variants"),
+        VcfExtension()        // Matches: .vcf, .vcf.gz, .bcf
+    ])
+    
+    // Validate DNA sequences
+    def dnaValidator = DNASequence()
+    "ACGTACGT" =~ /${dnaValidator}/  // ✓ valid
+    "ACGTXYZ" =~ /${dnaValidator}/   // ✗ invalid
 }
 ```
+
+### More Examples
+
+For comprehensive examples including:
+- File matching and filtering
+- Named capture groups
+- Validation and debugging
+- Complete RNA-seq pipeline integration
+
+See the [examples directory](examples/) in the repository.
 
 ## Bioinformatics Patterns Library
 
@@ -477,105 +749,71 @@ Digit().exactly(3)         // → (\d){3}
 Literal("a").range(2, 5)   // → (a){2,5}
 ```
 
-## Examples
 
-### Email Pattern
-```groovy
-include { Sequence; OneOrMore; Literal; Either; WordChar } from 'plugin/nf-pregex'
 
-def emailPattern = Sequence([
-    OneOrMore(WordChar()),
-    Literal("@"),
-    OneOrMore(WordChar()),
-    Literal("."),
-    Either(["com", "org", "edu"])
-])
-// → (\w)+@(\w)+\.(com|org|edu)
+## License
+
+```
+Copyright 2024 nf-pregex contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
 
-### FASTQ File Pattern
-```groovy
-include { Sequence; OneOrMore; Literal; Either; Optional; WordChar } from 'plugin/nf-pregex'
+This plugin is licensed under the **Apache License 2.0**, a permissive open-source license that allows you to freely use, modify, and distribute the software in both open-source and proprietary projects.
 
-def fastqPattern = Sequence([
-    OneOrMore(WordChar()),
-    Literal("_"),
-    Either(["R1", "R2"]),
-    Literal(".fastq"),
-    Optional(Literal(".gz"))
-])
-// → (\w)+_(R1|R2)\.fastq(\.gz)?
+**Key Permissions:**
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Patent use
+- ✅ Private use
 
-// Use with channel operations
-channel.fromPath("data/*")
-    .filter { it.name =~ /${fastqPattern}/ }
-    .view()
+**Requirements:**
+- 📄 Include a copy of the license
+- 📄 State significant changes
+- 📄 Include original copyright notice
+
+See the [LICENSE](LICENSE) file for the complete license text.
+
+---
+
+## Contributing
+
+Contributions are welcome! Whether you want to:
+- 🐛 Report a bug
+- 💡 Suggest a feature
+- 📖 Improve documentation
+- 🔧 Submit a pull request
+
+Please feel free to open an issue or pull request on GitHub.
+
+## Development
+
+### Building
+
+Build the plugin:
+
+```bash
+make assemble
 ```
 
-### Sample ID Pattern
-```groovy
-include { Sequence; Literal; Either; Digit } from 'plugin/nf-pregex'
+Or with Gradle:
 
-def samplePattern = Sequence([
-    Literal("S"),
-    Digit().exactly(3),
-    Literal("_"),
-    Either(["T", "C"]),
-    Digit(),
-    Literal("_"),
-    Either(["R1", "R2"])
-])
-// → S(\d){3}_(T|C)(\d)_(R1|R2)
+```bash
+./gradlew assemble
 ```
 
-### VCF File with Optional Version
-```groovy
-include { Sequence; OneOrMore; Literal; Optional; Digit; WordChar } from 'plugin/nf-pregex'
-
-def vcfPattern = Sequence([
-    OneOrMore(WordChar()),
-    Literal("."),
-    Optional(Sequence([
-        Literal("v"),
-        OneOrMore(Digit()),
-        Literal(".")
-    ])),
-    Literal("vcf"),
-    Optional(Literal(".gz"))
-])
-// Matches: variants.vcf, variants.v1.vcf.gz, etc.
-```
-
-### Custom Identifier with Character Ranges
-```groovy
-include { Sequence; CharRange; MultiRange; Literal } from 'plugin/nf-pregex'
-
-// Match plate well identifiers like A01, B12, H08
-def wellPattern = Sequence([
-    CharRange('A', 'H'),     // Row: A-H
-    CharRange('0', '9').exactly(2)  // Column: 00-99
-])
-// → [A-H]([0-9]){2}
-
-// Match custom alphanumeric codes
-def codePattern = Sequence([
-    MultiRange("'A'-'Z', '0'-'9'").exactly(3),
-    Literal("-"),
-    MultiRange("'a'-'z', '0'-'9'").exactly(4)
-])
-// → ([A-Z0-9]){3}-([a-z0-9]){4}
-// Matches: A1B-x9y2, 3XZ-test, etc.
-```
-
-## Benefits
-
-- **Readability**: Patterns are self-documenting
-- **Maintainability**: Easy to modify and understand
-- **Type Safety**: Compile-time checking in Groovy
-- **Reusability**: Build complex patterns from simpler components
-- **Error Prevention**: Automatic escaping of special characters
-
-## Testing
+### Testing
 
 Run the test suite:
 
@@ -589,27 +827,13 @@ Or with Gradle:
 ./gradlew test
 ```
 
-## Building
+### Local Installation
 
-Build the plugin:
-
-```bash
-make assemble
-```
-
-Install locally:
+Install the plugin locally for testing:
 
 ```bash
 make install
 ```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
-
-## License
-
-This plugin is licensed under the Apache License 2.0.
 
 ## Credits
 
@@ -620,3 +844,5 @@ Inspired by the [pregex](https://github.com/manoss96/pregex) Python library by M
 - [Nextflow Documentation](https://www.nextflow.io/docs/latest/)
 - [Nextflow Plugin Development](https://www.nextflow.io/docs/latest/plugins/developing-plugins.html)
 - [PRegEx Python Library](https://github.com/manoss96/pregex)
+- [Complete API Documentation](docs/API.md)
+- [Example Workflows](examples/)
