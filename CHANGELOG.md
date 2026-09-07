@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verbatim — e.g. `AnyOf([Sequence([Literal("chr"), OneOrMore(Digit())]), Literal("chrX")])`
   produces `(?:chr(?:\d)+|chrX)`. It collapses to a single child when given
   one and exposes its children for `explain()`/`visualize()` introspection.
+- `Capture` and `NamedCapture` pattern builders — readability aliases that
+  mirror Python's pregex naming. `Capture(p)` is equivalent to `Group(p)` and
+  `NamedCapture(name, p)` to `Group(name, p)` (name-first), producing identical
+  regex. Group names must be alphanumeric and start with a letter.
 - `children()` method on the `PRegEx` base class (empty for leaf nodes,
   overridden by every composite node) to expose nested patterns, plus the
   missing `getCount`, `getMin`, `getMax`, `getChars` and `getRegex` getters.

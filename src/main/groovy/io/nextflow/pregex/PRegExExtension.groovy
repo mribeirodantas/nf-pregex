@@ -322,6 +322,40 @@ class PRegExExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Creates a capturing group for the given pattern.
+     * Readability alias for {@link #Group(PRegEx)}, matching the naming used
+     * by Python's pregex library.
+     *
+     * Example: Capture(OneOrMore(Digit())) produces "(\d+)" which captures
+     * the digits.
+     *
+     * @param pattern The pattern to capture
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx Capture(PRegEx pattern) {
+        return new PRegEx.Group(pattern)
+    }
+
+    /**
+     * Creates a named capturing group for the given pattern.
+     * Readability alias for {@link #Group(String, PRegEx)} with the name
+     * first, matching the naming used by Python's pregex library.
+     *
+     * Example: NamedCapture("sampleId", OneOrMore(WordChar())) produces
+     * "(?<sampleId>\w+)". Later can be accessed with: matcher.group('sampleId').
+     * Group names must start with a letter and be alphanumeric (no underscores).
+     *
+     * @param name The name for the capturing group (must start with letter, alphanumeric only)
+     * @param pattern The pattern to capture
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx NamedCapture(String name, PRegEx pattern) {
+        return new PRegEx.NamedGroup(name, pattern)
+    }
+
+    /**
      * Creates a character class pattern that matches any of the specified characters.
      * 
      * Example: CharClass("abc") produces "[abc]"

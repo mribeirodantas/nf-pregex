@@ -373,6 +373,30 @@ workflow {
 
 ---
 
+### Capture(PRegEx) / NamedCapture(String, PRegEx)
+
+Readability aliases that mirror the naming used by Python's
+[pregex](https://github.com/manoss96/pregex) library. They produce identical
+regex to the corresponding `Group` builders — use whichever reads better in
+your pipeline.
+
+**Syntax:**
+```groovy
+Capture(PRegEx pattern)                    // alias for Group(pattern)
+NamedCapture(String name, PRegEx pattern)  // alias for Group(name, pattern)
+```
+
+**Examples:**
+```groovy
+Capture(OneOrMore(Digit()))                       // → ((?:\d)+)
+NamedCapture('sampleId', OneOrMore(WordChar()))   // → (?<sampleId>(?:\w)+)
+```
+
+**Notes:**
+- `Capture(p)` is exactly equivalent to `Group(p)`.
+- `NamedCapture(name, p)` is exactly equivalent to `Group(name, p)` (name-first).
+- Group names must start with a letter and contain only alphanumeric
+  characters (no underscores) — invalid names throw `IllegalArgumentException`.
 
 ---
 

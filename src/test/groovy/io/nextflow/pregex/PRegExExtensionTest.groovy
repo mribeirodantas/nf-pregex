@@ -461,6 +461,59 @@ class PRegExExtensionTest extends Specification {
         thrown(IllegalArgumentException)
     }
 
+    // Capture / NamedCapture alias tests
+
+    def "Capture function should create an unnamed capturing group"() {
+        when:
+        def pattern = extension.Capture(extension.OneOrMore(extension.Digit()))
+
+        then:
+        pattern.toRegex() == '((?:\\d)+)'
+    }
+
+    def "Capture should be equivalent to Group"() {
+        expect:
+        extension.Capture(extension.Digit()).toRegex() == extension.Group(extension.Digit()).toRegex()
+    }
+
+    def "NamedCapture function should create a named capturing group"() {
+        when:
+        def pattern = extension.NamedCapture('sampleId', extension.OneOrMore(extension.WordChar()))
+
+        then:
+        pattern.toRegex() == '(?<sampleId>(?:\\w)+)'
+    }
+
+    def "NamedCapture should be equivalent to name-first Group"() {
+        expect:
+        extension.NamedCapture('id', extension.Digit()).toRegex() == extension.Group('id', extension.Digit()).toRegex()
+    }
+
+    def "NamedCapture should work with matcher"() {
+        when:
+        def pattern = extension.Sequence([
+            extension.NamedCapture('samplename', extension.OneOrMore(extension.AnyChar())),
+            extension.CharClass('._'),
+            extension.NamedCapture('rp', extension.ReadPair()),
+            extension.Literal('.fastq.gz')
+        ])
+        def regex = java.util.regex.Pattern.compile(pattern.toRegex())
+        def matcher = regex.matcher('sample_123_R1.fastq.gz')
+
+        then:
+        matcher.matches()
+        matcher.group('samplename') == 'sample_123'
+        matcher.group('rp') == 'R1'
+    }
+
+    def "NamedCapture should validate group name"() {
+        when:
+        extension.NamedCapture('123invalid', extension.Digit())
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
     def "Named Group should work with multiple groups and backreference"() {
         when:
         def pattern = extension.Sequence([

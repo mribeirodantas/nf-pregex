@@ -138,8 +138,12 @@ AnyOf([
 | Builder | Produces | Description |
 |---|---|---|
 | `Group(p)` | `(p)` | Capturing group |
+| `Capture(p)` | `(p)` | Capturing group (alias for `Group(p)`, pregex-style naming) |
 | `Group(name, p)` | `(?<name>p)` | Named capturing group |
+| `NamedCapture(name, p)` | `(?<name>p)` | Named capturing group (name-first alias, pregex-style naming) |
 | `NamedGroup(p, name)` | `(?<name>p)` | Named capturing group (pattern-first form) |
+
+Group names must start with a letter and contain only alphanumeric characters (no underscores).
 
 ## Bioinformatics patterns
 
