@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         java_version: [17, 21]
-        nextflow_version: ['24.10', '25.04']
+        nextflow_version: ['24.10', '25.04', '26.04']
 
     steps:
       - name: Environment
@@ -50,5 +50,16 @@ jobs:
       - name: Install
         run: make install
 
+      - name: Strict-syntax (v2) parse check
+        run: NXF_SYNTAX_PARSER=v2 nextflow inspect examples/rnaseq-pipeline/main.nf --reads 'examples/rnaseq-pipeline/data/*fastq.gz'
+
       - name: Run test pipeline
         run: nextflow run examples/rnaseq-pipeline/main.nf --reads 'examples/rnaseq-pipeline/data/*fastq.gz'
+
+      - name: Install nf-test
+        run: |
+          wget -qO- https://get.nf-test.com | bash
+          sudo mv nf-test /usr/local/bin/
+
+      - name: Run nf-test
+        run: nf-test test

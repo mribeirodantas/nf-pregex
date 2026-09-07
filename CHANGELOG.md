@@ -17,8 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `children()` method on the `PRegEx` base class (empty for leaf nodes,
   overridden by every composite node) to expose nested patterns, plus the
   missing `getCount`, `getMin`, `getMax`, `getChars` and `getRegex` getters.
+- An nf-test suite (`nf-test.config`, `tests/example_pipeline.nf.test`)
+  covering the Illumina FASTQ parsing example end-to-end: it asserts the run
+  succeeds, that six parse tasks run (3 samples × R1/R2), and that the
+  nf-pregex pattern extracts the correct metadata into the published JSON.
+- CI now also tests Nextflow `26.04` and runs a strict-syntax (v2) parse
+  check (`NXF_SYNTAX_PARSER=v2 nextflow inspect`) plus the nf-test suite, so
+  strict-parser regressions are caught in CI.
 
 ### Changed
+- Restructured the example pipeline's `workflow {}` to use an explicit
+  `main:` section so it parses cleanly under the Nextflow 26.04 strict (v2)
+  syntax parser.
 - Migrated the eight compact `BioinformaticsPatterns` builders
   (`PhredQuality`, `Chromosome`, `StrictChromosome`, `FastqExtension`,
   `VcfExtension`, `AlignmentExtension`, `GffGtfExtension`, `FastaExtension`)

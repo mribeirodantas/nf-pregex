@@ -145,7 +145,8 @@ def parseFilenameWithPregex(fastq_path) {
  * Main Workflow
  */
 workflow {
-    
+    main:
+
     // Show help message
     if (params.help) {
         log.info """
@@ -244,13 +245,10 @@ workflow {
             tuple(file_meta, fastq_path)
         }
     
-    main:
     // Run parsing and QC process
     PARSE_AND_QC(reads_ch)
 
-    /*
-     * Workflow completion handler
-     */
+    // Workflow completion handler
     workflow.onComplete = {
         def status_icon = workflow.success ? '✅ SUCCESS' : '❌ FAILED'
         log.info """

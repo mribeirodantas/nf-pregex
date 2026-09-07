@@ -1,0 +1,42 @@
+nextflow_pipeline {
+
+    name "Example pipeline: Illumina FASTQ filename parsing with nf-pregex"
+    script "examples/rnaseq-pipeline/main.nf"
+    config "examples/rnaseq-pipeline/nextflow.config"
+
+    test("parses every sample FASTQ filename and emits metadata JSON") {
+
+        when {
+            params {
+                reads  = "${projectDir}/examples/rnaseq-pipeline/data/*_S*_L*_R*_*.fastq.gz"
+                outdir = "${outputDir}"
+            }
+        }
+
+        then {
+            // 1. The run itself must succeed. This is what catches parser
+            //    regressions (e.g. the v2-only `onComplete:` breakage): the
+            //    plugin `include` must resolve AND the script must compile.
+            assert workflow.success
+
+            // 2. Six input reads (3 samples x R1/R2) => six parse tasks.
+            assert workflow.trace.succeeded().size() == 6
+
+            // 3. The nf-pregex pattern must actually extract the right
+            //    metadata, not just run without error. Assert content of a
+            //    known sample's published JSON.
+            def metaJson = path("${outputDir}/parsed_metadata/SAMPLE_001_metadata.json")
+            assert metaJson.exists()
+
+            def meta = new groovy.json.JsonSlurper().parseText(metaJson.text)
+            assert meta.sample_name    == "SAMPLE_001"
+            assert meta.lane           == "001"
+            assert meta.read in ["R1", "R2"]
+            assert meta.parsing_method == "nf-pregex"
+
+            // 4. All three sample names should have produced output.
+            assert path("${outputDir}/parsed_metadata/SAMPLE_002_metadata.json").exists()
+            assert path("${outputDir}/parsed_metadata/SAMPLE_003_metadata.json").exists()
+        }
+    }
+}
