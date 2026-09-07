@@ -28,6 +28,19 @@ abstract class PRegEx {
     }
 
     /**
+     * Returns the direct child patterns of this pattern, used for
+     * traversal by explain() and visualize(). Atomic/leaf patterns
+     * return an empty list; composite patterns override this to expose
+     * their nested pattern(s). This provides a type-safe alternative to
+     * reflecting over private fields.
+     *
+     * @return The nested child patterns (never null)
+     */
+    List<PRegEx> children() {
+        return [] as List<PRegEx>
+    }
+
+    /**
      * Helper method to determine if a pattern string needs grouping when applying quantifiers.
      * Simple patterns like \d, \w, \s, character classes, etc. don't need grouping.
      */
@@ -151,6 +164,39 @@ abstract class PRegEx {
             }
             return "(?:" + alternatives.collect { escapeRegex(it) }.join("|") + ")"
         }
+
+        List<String> getAlternatives() {
+            return alternatives
+        }
+    }
+
+    /**
+     * Pattern that wraps a raw, pre-built regex string verbatim.
+     *
+     * Use this for patterns that are more concise or clearer expressed
+     * directly as regex (e.g. compact character-range alternations) while
+     * still participating in the PRegEx API (test/matches/extract, and
+     * introspection via explain()/visualize()).
+     */
+    @CompileStatic
+    static class Raw extends PRegEx {
+        private final String regex
+
+        Raw(String regex) {
+            if (regex == null) {
+                throw new IllegalArgumentException("Raw regex cannot be null")
+            }
+            this.regex = regex
+        }
+
+        @Override
+        String toRegex() {
+            return regex
+        }
+
+        String getRegex() {
+            return regex
+        }
     }
 
     /**
@@ -167,6 +213,10 @@ abstract class PRegEx {
         @Override
         String toRegex() {
             return escapeRegex(text)
+        }
+
+        String getText() {
+            return text
         }
     }
 
@@ -185,6 +235,11 @@ abstract class PRegEx {
         String toRegex() {
             return "(?:" + pattern.toRegex() + ")?"
         }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
+        }
     }
 
     /**
@@ -202,6 +257,11 @@ abstract class PRegEx {
         String toRegex() {
             return "(?:" + pattern.toRegex() + ")+"
         }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
+        }
     }
 
     /**
@@ -218,6 +278,11 @@ abstract class PRegEx {
         @Override
         String toRegex() {
             return "(?:" + pattern.toRegex() + ")*"
+        }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
         }
     }
 
@@ -250,6 +315,15 @@ abstract class PRegEx {
                 return patternStr + "{" + count + "}"
             }
         }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
+        }
+
+        int getCount() {
+            return count
+        }
     }
 
     /**
@@ -281,6 +355,19 @@ abstract class PRegEx {
                 return patternStr + "{" + min + "," + max + "}"
             }
         }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
+        }
+
+        int getMin() {
+            return min
+        }
+
+        int getMax() {
+            return max
+        }
     }
 
     /**
@@ -310,6 +397,15 @@ abstract class PRegEx {
                 return patternStr + "{" + min + ",}"
             }
         }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
+        }
+
+        int getMin() {
+            return min
+        }
     }
 
     /**
@@ -329,6 +425,11 @@ abstract class PRegEx {
         @Override
         String toRegex() {
             return patterns.collect { it.toRegex() }.join("")
+        }
+
+        @Override
+        List<PRegEx> children() {
+            return patterns
         }
     }
 
@@ -558,6 +659,10 @@ abstract class PRegEx {
                               .replace('-', '\\-')
             return negated ? "[^${escaped}]" : "[${escaped}]"
         }
+
+        String getChars() {
+            return chars
+        }
     }
 
     /**
@@ -574,6 +679,11 @@ abstract class PRegEx {
         @Override
         String toRegex() {
             return "(" + pattern.toRegex() + ")"
+        }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
         }
     }
 
@@ -596,6 +706,11 @@ abstract class PRegEx {
         @Override
         String toRegex() {
             return "(?<" + name + ">" + pattern.toRegex() + ")"
+        }
+
+        @Override
+        List<PRegEx> children() {
+            return [pattern]
         }
 
         String getName() {
@@ -791,59 +906,20 @@ abstract class PRegEx {
         def description = getPatternDescription(pattern)
         result.append(indent).append("• ").append(description).append("\n")
         
-        // Handle composite patterns
-        if (pattern instanceof Sequence) {
-            def patterns = getFieldValue(pattern, 'patterns')
-            patterns?.eachWithIndex { p, i ->
-                result.append(explainComponents(p, depth + 1))
-            }
-        } else if (pattern instanceof Either) {
+        // Either exposes String alternatives rather than child patterns
+        if (pattern instanceof Either) {
             result.append(indent).append("  Options:\n")
-            def alternatives = getFieldValue(pattern, 'alternatives')
-            alternatives?.each { alt ->
+            ((Either) pattern).getAlternatives().each { alt ->
                 result.append(indent).append("    - ").append(alt).append("\n")
             }
-        } else if (pattern instanceof OneOrMore || pattern instanceof ZeroOrMore || 
-                   pattern instanceof Optional || pattern instanceof Exactly ||
-                   pattern instanceof Range || pattern instanceof AtLeast) {
-            // Use reflection to access private pattern field
-            try {
-                def field = pattern.class.getDeclaredField('pattern')
-                field.setAccessible(true)
-                def nestedPattern = field.get(pattern)
-                if (nestedPattern) {
-                    result.append(explainComponents(nestedPattern, depth + 1))
-                }
-            } catch (Exception ignored) {
-                // If reflection fails, continue without nested explanation
-            }
-        } else if (pattern instanceof Group || pattern instanceof NamedGroup) {
-            try {
-                def field = pattern.class.getDeclaredField('pattern')
-                field.setAccessible(true)
-                def nestedPattern = field.get(pattern)
-                if (nestedPattern) {
-                    result.append(explainComponents(nestedPattern, depth + 1))
-                }
-            } catch (Exception ignored) {
-                // If reflection fails, continue without nested explanation
+        } else {
+            // All other composite patterns expose nested patterns via children()
+            pattern.children().each { child ->
+                result.append(explainComponents(child, depth + 1))
             }
         }
         
         return result.toString()
-    }
-
-    /**
-     * Helper to get a private field value using reflection.
-     */
-    private static Object getFieldValue(Object obj, String fieldName) {
-        try {
-            def field = obj.class.getDeclaredField(fieldName)
-            field.setAccessible(true)
-            return field.get(obj)
-        } catch (Exception e) {
-            return null
-        }
     }
 
     /**
@@ -852,7 +928,7 @@ abstract class PRegEx {
     @groovy.transform.CompileDynamic
     private static String getPatternDescription(PRegEx pattern) {
         if (pattern instanceof Literal) {
-            def text = getFieldValue(pattern, 'text')
+            def text = ((Literal) pattern).getText()
             return "Literal text: \"${text}\""
         } else if (pattern instanceof Digit) {
             return "Any digit (0-9)"
@@ -869,28 +945,30 @@ abstract class PRegEx {
         } else if (pattern instanceof Optional) {
             return "Optional:"
         } else if (pattern instanceof Exactly) {
-            def count = getFieldValue(pattern, 'count')
+            def count = ((Exactly) pattern).getCount()
             return "Exactly ${count} times:"
         } else if (pattern instanceof Range) {
-            def min = getFieldValue(pattern, 'min')
-            def max = getFieldValue(pattern, 'max')
+            def min = ((Range) pattern).getMin()
+            def max = ((Range) pattern).getMax()
             return "Between ${min} and ${max} times:"
         } else if (pattern instanceof AtLeast) {
-            def min = getFieldValue(pattern, 'min')
+            def min = ((AtLeast) pattern).getMin()
             return "At least ${min} times:"
         } else if (pattern instanceof Either) {
-            def alternatives = getFieldValue(pattern, 'alternatives')
+            def alternatives = ((Either) pattern).getAlternatives()
             return "One of: ${alternatives.join(', ')}"
         } else if (pattern instanceof NamedGroup) {
-            def name = getFieldValue(pattern, 'name')
+            def name = ((NamedGroup) pattern).getName()
             return "Named group '${name}':"
         } else if (pattern instanceof Group) {
             return "Capturing group:"
         } else if (pattern instanceof Sequence) {
             return "Sequence of patterns"
         } else if (pattern instanceof CharClass) {
-            def chars = getFieldValue(pattern, 'chars')
+            def chars = ((CharClass) pattern).getChars()
             return "Character class: [${chars}]"
+        } else if (pattern instanceof Raw) {
+            return "Raw regex: ${((Raw) pattern).getRegex()}"
         } else {
             return pattern.class.simpleName
         }
@@ -902,14 +980,14 @@ abstract class PRegEx {
     @groovy.transform.CompileDynamic
     private static String describePattern(PRegEx pattern) {
         if (pattern instanceof Literal) {
-            def text = getFieldValue(pattern, 'text')
+            def text = ((Literal) pattern).getText()
             return "the exact text '${text}'"
         } else if (pattern instanceof Digit) {
             return "numeric digits"
         } else if (pattern instanceof WordChar) {
             return "alphanumeric characters and underscores"
         } else if (pattern instanceof Either) {
-            def alternatives = getFieldValue(pattern, 'alternatives')
+            def alternatives = ((Either) pattern).getAlternatives()
             return "one of: ${alternatives.join(', ')}"
         } else {
             return "patterns matching: ${pattern.toRegex()}"
@@ -944,42 +1022,18 @@ abstract class PRegEx {
         
         def childPrefix = prefix + (isLast ? "    " : "│   ")
         
-        if (pattern instanceof Sequence) {
-            def patterns = getFieldValue(pattern, 'patterns')
-            patterns?.eachWithIndex { p, i ->
-                def last = (i == patterns.size() - 1)
-                result.append(visualizeTree(p, childPrefix, last))
-            }
-        } else if (pattern instanceof Either) {
-            def alternatives = getFieldValue(pattern, 'alternatives')
-            alternatives?.eachWithIndex { alt, i ->
+        if (pattern instanceof Either) {
+            def alternatives = ((Either) pattern).getAlternatives()
+            alternatives.eachWithIndex { alt, i ->
                 def last = (i == alternatives.size() - 1)
                 def literalPattern = new Literal(alt.toString())
                 result.append(visualizeTree(literalPattern, childPrefix, last))
             }
-        } else if (pattern instanceof OneOrMore || pattern instanceof ZeroOrMore || 
-                   pattern instanceof Optional || pattern instanceof Exactly ||
-                   pattern instanceof Range || pattern instanceof AtLeast) {
-            try {
-                def field = pattern.class.getDeclaredField('pattern')
-                field.setAccessible(true)
-                def nestedPattern = field.get(pattern)
-                if (nestedPattern) {
-                    result.append(visualizeTree(nestedPattern, childPrefix, true))
-                }
-            } catch (Exception ignored) {
-                // If reflection fails, continue without nested visualization
-            }
-        } else if (pattern instanceof Group || pattern instanceof NamedGroup) {
-            try {
-                def field = pattern.class.getDeclaredField('pattern')
-                field.setAccessible(true)
-                def nestedPattern = field.get(pattern)
-                if (nestedPattern) {
-                    result.append(visualizeTree(nestedPattern, childPrefix, true))
-                }
-            } catch (Exception ignored) {
-                // If reflection fails, continue without nested visualization
+        } else {
+            def kids = pattern.children()
+            kids.eachWithIndex { child, i ->
+                def last = (i == kids.size() - 1)
+                result.append(visualizeTree(child, childPrefix, last))
             }
         }
         
