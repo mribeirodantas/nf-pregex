@@ -514,4 +514,39 @@ class BioinformaticsPatternsTest extends Specification {
             ">chr1:1000-2000\nAAAAAAAA"
         ]
     }
+
+    // Introspection: compact-regex patterns are Raw nodes and are
+    // reported by explain()/visualize() rather than showing a blank
+    // (anonymous-class) description.
+
+    @Unroll
+    def "compact bioinformatics pattern should be introspectable via explain(): #description"() {
+        expect:
+        def explanation = pattern.explain()
+        explanation.contains("Raw regex:")
+        explanation.contains(pattern.toRegex())
+
+        where:
+        description        | pattern
+        "Chromosome"       | BioinformaticsPatterns.Chromosome()
+        "StrictChromosome" | BioinformaticsPatterns.StrictChromosome()
+        "PhredQuality"     | BioinformaticsPatterns.PhredQuality()
+        "FastqExtension"   | BioinformaticsPatterns.FastqExtension()
+        "VcfExtension"     | BioinformaticsPatterns.VcfExtension()
+        "AlignmentExtension" | BioinformaticsPatterns.AlignmentExtension()
+        "GffGtfExtension"  | BioinformaticsPatterns.GffGtfExtension()
+        "FastaExtension"   | BioinformaticsPatterns.FastaExtension()
+    }
+
+    def "compact bioinformatics pattern should be introspectable via visualize()"() {
+        given:
+        def pattern = BioinformaticsPatterns.Chromosome()
+
+        when:
+        def visualization = pattern.visualize()
+
+        then:
+        visualization.contains("Raw regex:")
+        visualization.contains(pattern.toRegex())
+    }
 }

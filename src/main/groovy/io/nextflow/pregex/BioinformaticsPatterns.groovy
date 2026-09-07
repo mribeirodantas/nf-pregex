@@ -114,16 +114,9 @@ class BioinformaticsPatterns {
      * @return A pattern matching Phred quality scores
      */
     static PRegEx PhredQuality() {
-        // Match Phred quality scores (Phred+33 encoding, ASCII 33-126)
-        // Use a simpler approach - match any printable ASCII character
-        // We'll create a pattern that matches characters in the ! to ~ range
-        def qualityPattern = new PRegEx() {
-            @Override
-            String toRegex() {
-                return "[!-~]+"  // Character class range from ! (33) to ~ (126)
-            }
-        }
-        return qualityPattern
+        // Match Phred quality scores (Phred+33 encoding, ASCII 33-126):
+        // a character-class range from ! (33) to ~ (126).
+        return new Raw("[!-~]+")
     }
     
     /**
@@ -145,12 +138,7 @@ class BioinformaticsPatterns {
         // The number alternatives are ordered longest/most-specific first
         // (2[0-2] | 1[0-9] | [1-9]) so that Matcher.find()/extract() consume
         // the full number (e.g. "22") rather than stopping at a leading digit.
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "(?:chr)?(?:2[0-2]|1[0-9]|[1-9]|[XYMxym])"
-            }
-        }
+        return new Raw("(?:chr)?(?:2[0-2]|1[0-9]|[1-9]|[XYMxym])")
     }
     
     /**
@@ -173,12 +161,7 @@ class BioinformaticsPatterns {
         //
         // Number alternatives ordered longest-first (see Chromosome()) so
         // find()/extract() consume the full number rather than a leading digit.
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "chr(?:2[0-2]|1[0-9]|[1-9]|[XYMxym])"
-            }
-        }
+        return new Raw("chr(?:2[0-2]|1[0-9]|[1-9]|[XYMxym])")
     }
     
     /**
@@ -215,12 +198,7 @@ class BioinformaticsPatterns {
      */
     static PRegEx FastqExtension() {
         // Case-insensitive matching for .fastq, .fq with optional .gz
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "(?i)\\.(fastq|fq)(\\.(gz))?"
-            }
-        }
+        return new Raw("(?i)\\.(fastq|fq)(\\.(gz))?")
     }
     
     /**
@@ -236,12 +214,7 @@ class BioinformaticsPatterns {
      */
     static PRegEx VcfExtension() {
         // Case-insensitive matching for .vcf, .bcf with optional .gz
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "(?i)\\.(vcf|bcf)(\\.(gz))?"
-            }
-        }
+        return new Raw("(?i)\\.(vcf|bcf)(\\.(gz))?")
     }
     
     /**
@@ -257,12 +230,7 @@ class BioinformaticsPatterns {
      */
     static PRegEx AlignmentExtension() {
         // Case-insensitive matching for .bam, .sam, .cram
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "(?i)\\.(bam|sam|cram)"
-            }
-        }
+        return new Raw("(?i)\\.(bam|sam|cram)")
     }
     
     /**
@@ -303,12 +271,7 @@ class BioinformaticsPatterns {
      */
     static PRegEx GffGtfExtension() {
         // Case-insensitive matching for .gff, .gff3, .gtf with optional .gz
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "(?i)\\.(gff3?|gtf)(\\.(gz))?"
-            }
-        }
+        return new Raw("(?i)\\.(gff3?|gtf)(\\.(gz))?")
     }
     
     /**
@@ -325,11 +288,6 @@ class BioinformaticsPatterns {
      */
     static PRegEx FastaExtension() {
         // Case-insensitive matching for .fa, .fasta, .fna with optional .gz
-        return new PRegEx() {
-            @Override
-            String toRegex() {
-                return "(?i)\\.(fa|fasta|fna)(\\.(gz))?"
-            }
-        }
+        return new Raw("(?i)\\.(fa|fasta|fna)(\\.(gz))?")
     }
 }
