@@ -7,11 +7,11 @@
  * traditional regex strings for more readable pattern matching.
  * 
  * To run this example:
- *   nextflow run basic_usage.nf -plugins nf-pregex@1.0.1
+ *   nextflow run basic_usage.nf -plugins nf-pregex@1.1.0
  * 
  * Or add to your nextflow.config:
  *   plugins {
- *       id 'nf-pregex@1.0.1'
+ *       id 'nf-pregex@1.1.0'
  *   }
  */
 

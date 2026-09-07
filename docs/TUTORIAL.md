@@ -12,7 +12,7 @@ Add the plugin to your `nextflow.config`:
 
 ```groovy
 plugins {
-    id 'nf-pregex@1.0.1'
+    id 'nf-pregex@1.1.0'
 }
 ```
 
@@ -73,7 +73,7 @@ workflow {
 
 Run it:
 ```bash
-nextflow run hello_pregex.nf -plugins nf-pregex@1.0.1
+nextflow run hello_pregex.nf -plugins nf-pregex@1.1.0
 ```
 
 ## Lesson 2: Building Complex Patterns

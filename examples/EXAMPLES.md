@@ -10,13 +10,13 @@ All examples require the nf-pregex plugin. Enable it using one of these methods:
 Add to `nextflow.config`:
 ```groovy
 plugins {
-    id 'nf-pregex@1.0.1'
+    id 'nf-pregex@1.1.0'
 }
 ```
 
 ### Method 2: Command Line
 ```bash
-nextflow run <example>.nf -plugins nf-pregex@1.0.1
+nextflow run <example>.nf -plugins nf-pregex@1.1.0
 ```
 
 ### Method 3: Use Provided Config
@@ -40,7 +40,7 @@ nextflow run <example>.nf
 
 **Run**:
 ```bash
-nextflow run basic_usage.nf -plugins nf-pregex@1.0.1
+nextflow run basic_usage.nf -plugins nf-pregex@1.1.0
 ```
 
 **Key patterns demonstrated**:
@@ -65,7 +65,7 @@ nextflow run basic_usage.nf -plugins nf-pregex@1.0.1
 
 **Run**:
 ```bash
-nextflow run file_matching.nf -plugins nf-pregex@1.0.1
+nextflow run file_matching.nf -plugins nf-pregex@1.1.0
 ```
 
 **Key patterns demonstrated**:
@@ -89,7 +89,7 @@ nextflow run file_matching.nf -plugins nf-pregex@1.0.1
 
 **Run**:
 ```bash
-nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.0.1
+nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.1.0
 ```
 
 **Key patterns demonstrated**:
@@ -113,7 +113,7 @@ nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.0.1
 
 **Run**:
 ```bash
-nextflow run named_groups_example.nf -plugins nf-pregex@1.0.1
+nextflow run named_groups_example.nf -plugins nf-pregex@1.1.0
 ```
 
 ---
@@ -131,7 +131,7 @@ A full-featured example pipeline demonstrating nf-pregex in a real-world scenari
 **Run**:
 ```bash
 cd rnaseq-pipeline
-nextflow run main.nf -plugins nf-pregex@1.0.1
+nextflow run main.nf -plugins nf-pregex@1.1.0
 ```
 
 See `rnaseq-pipeline/README.md` for detailed documentation.
@@ -249,14 +249,14 @@ All examples are self-contained and can be run independently:
 
 ```bash
 # Test individual examples
-nextflow run basic_usage.nf -plugins nf-pregex@1.0.1
-nextflow run file_matching.nf -plugins nf-pregex@1.0.1
-nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.0.1
-nextflow run named_groups_example.nf -plugins nf-pregex@1.0.1
+nextflow run basic_usage.nf -plugins nf-pregex@1.1.0
+nextflow run file_matching.nf -plugins nf-pregex@1.1.0
+nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.1.0
+nextflow run named_groups_example.nf -plugins nf-pregex@1.1.0
 
 # Test the full pipeline
 cd rnaseq-pipeline
-nextflow run main.nf -plugins nf-pregex@1.0.1
+nextflow run main.nf -plugins nf-pregex@1.1.0
 ```
 
 ---

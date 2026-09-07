@@ -36,7 +36,7 @@ Add the plugin to your `nextflow.config`:
 
 ```groovy
 plugins {
-    id 'nf-pregex@1.0.1'
+    id 'nf-pregex@1.1.0'
 }
 ```
 

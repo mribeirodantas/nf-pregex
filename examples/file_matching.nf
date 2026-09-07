@@ -7,7 +7,7 @@
  * filenames in typical bioinformatics workflows.
  * 
  * To run this example:
- *   nextflow run file_matching.nf -plugins nf-pregex@1.0.1
+ *   nextflow run file_matching.nf -plugins nf-pregex@1.1.0
  */
 
 include { 

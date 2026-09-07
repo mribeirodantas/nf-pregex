@@ -7,7 +7,7 @@
  * that simplify common file matching and validation tasks.
  * 
  * To run this example:
- *   nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.0.1
+ *   nextflow run bioinformatics_patterns.nf -plugins nf-pregex@1.1.0
  */
 
 include {
