@@ -24,7 +24,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches any of the provided alternatives.
      * 
-     * Example: Either(["foo", "bar", "baz"]) produces "(foo|bar|baz)"
+     * Example: Either(["foo", "bar", "baz"]) produces "(?:foo|bar|baz)"
      * 
      * @param alternatives List of string alternatives
      * @return PRegEx pattern object
@@ -54,7 +54,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches zero or one occurrence of the given pattern.
      * 
-     * Example: Optional(Literal("s")) produces "(s)?"
+     * Example: Optional(Literal("s")) produces "(?:s)?"
      * 
      * @param pattern The pattern to make optional
      * @return PRegEx pattern object
@@ -67,7 +67,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches one or more occurrences of the given pattern.
      * 
-     * Example: OneOrMore(Literal("a")) produces "(a)+"
+     * Example: OneOrMore(Literal("a")) produces "(?:a)+"
      * 
      * @param pattern The pattern to repeat
      * @return PRegEx pattern object
@@ -80,7 +80,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches zero or more occurrences of the given pattern.
      * 
-     * Example: ZeroOrMore(Literal("a")) produces "(a)*"
+     * Example: ZeroOrMore(Literal("a")) produces "(?:a)*"
      * 
      * @param pattern The pattern to repeat
      * @return PRegEx pattern object
@@ -93,7 +93,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches exactly n occurrences of the given pattern.
      * 
-     * Example: Exactly(Literal("a"), 3) produces "(a){3}"
+     * Example: Exactly(Literal("a"), 3) produces "(?:a){3}"
      * 
      * @param pattern The pattern to repeat
      * @param n The exact number of repetitions
@@ -107,7 +107,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches between min and max occurrences of the given pattern.
      * 
-     * Example: Range(Literal("a"), 2, 4) produces "(a){2,4}"
+     * Example: Range(Literal("a"), 2, 4) produces "(?:a){2,4}"
      * 
      * @param pattern The pattern to repeat
      * @param min Minimum number of repetitions
@@ -122,7 +122,7 @@ class PRegExExtension extends PluginExtensionPoint {
     /**
      * Creates a pattern that matches at least n occurrences of the given pattern.
      * 
-     * Example: AtLeast(Literal("a"), 2) produces "(a){2,}"
+     * Example: AtLeast(Literal("a"), 2) produces "(?:a){2,}"
      * 
      * @param pattern The pattern to repeat
      * @param n Minimum number of repetitions

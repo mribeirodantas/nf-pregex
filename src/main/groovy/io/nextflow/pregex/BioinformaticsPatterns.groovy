@@ -138,17 +138,19 @@ class BioinformaticsPatterns {
      * @return A pattern matching chromosome names
      */
     static PRegEx Chromosome() {
-        // Matches chromosome names with optional 'chr' prefix
-        // Supports: 1-22, X, Y, M with or without 'chr' prefix
-        def alternatives = [] as List<String>
-        // With chr prefix
-        (1..22).each { alternatives << "chr${it}".toString() }
-        alternatives.addAll(['chrX', 'chrY', 'chrM', 'chrx', 'chry', 'chrm'])
-        // Without chr prefix
-        (1..22).each { alternatives << "${it}".toString() }
-        alternatives.addAll(['X', 'Y', 'M', 'x', 'y', 'm'])
-        
-        return new Either(alternatives)
+        // Matches chromosome names with optional 'chr' prefix.
+        // Supports: 1-22, X, Y, M with or without 'chr' prefix.
+        //
+        // Uses a compact numeric range instead of a 56-branch alternation.
+        // The number alternatives are ordered longest/most-specific first
+        // (2[0-2] | 1[0-9] | [1-9]) so that Matcher.find()/extract() consume
+        // the full number (e.g. "22") rather than stopping at a leading digit.
+        return new PRegEx() {
+            @Override
+            String toRegex() {
+                return "(?:chr)?(?:2[0-2]|1[0-9]|[1-9]|[XYMxym])"
+            }
+        }
     }
     
     /**
@@ -166,13 +168,17 @@ class BioinformaticsPatterns {
      * @return A pattern matching strict chromosome names
      */
     static PRegEx StrictChromosome() {
-        // Matches chromosome names that require the 'chr' prefix
-        // Supports: chr1-22, chrX, chrY, chrM (case-insensitive for letters)
-        def alternatives = [] as List<String>
-        (1..22).each { alternatives << "chr${it}".toString() }
-        alternatives.addAll(['chrX', 'chrY', 'chrM', 'chrx', 'chry', 'chrm'])
-        
-        return new Either(alternatives)
+        // Matches chromosome names that require the 'chr' prefix.
+        // Supports: chr1-22, chrX, chrY, chrM (case-insensitive for letters).
+        //
+        // Number alternatives ordered longest-first (see Chromosome()) so
+        // find()/extract() consume the full number rather than a leading digit.
+        return new PRegEx() {
+            @Override
+            String toRegex() {
+                return "chr(?:2[0-2]|1[0-9]|[1-9]|[XYMxym])"
+            }
+        }
     }
     
     /**
