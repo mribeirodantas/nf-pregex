@@ -230,6 +230,44 @@ class PRegExTest extends Specification {
         thrown(IllegalArgumentException)
     }
 
+    def "AnyOf should alternate over sub-patterns without re-escaping"() {
+        when:
+        def pattern = new PRegEx.AnyOf([
+            new PRegEx.OneOrMore(new PRegEx.Digit()),
+            new PRegEx.Literal('chrX')
+        ])
+
+        then:
+        pattern.toRegex() == '(?:(?:\\d)+|chrX)'
+    }
+
+    def "AnyOf with single pattern should not add alternation"() {
+        when:
+        def pattern = new PRegEx.AnyOf([new PRegEx.Literal('foo')])
+
+        then:
+        pattern.toRegex() == 'foo'
+    }
+
+    def "AnyOf should expose sub-patterns as children"() {
+        given:
+        def child = new PRegEx.Literal('foo')
+
+        when:
+        def pattern = new PRegEx.AnyOf([child])
+
+        then:
+        pattern.children() == [child]
+    }
+
+    def "AnyOf should throw exception for empty patterns"() {
+        when:
+        new PRegEx.AnyOf([])
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
     @Unroll
     def "Exactly should throw exception for negative count"() {
         when:

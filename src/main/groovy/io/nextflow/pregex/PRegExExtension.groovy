@@ -39,6 +39,33 @@ class PRegExExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Creates a pattern that matches any of the provided sub-patterns.
+     *
+     * Unlike Either (which alternates over literal strings), AnyOf alternates
+     * over arbitrary PRegEx sub-patterns, allowing alternation of composite
+     * patterns.
+     *
+     * Example: AnyOf([Sequence([Literal("chr"), OneOrMore(Digit())]), Literal("chrX")])
+     *
+     * @param patterns List of PRegEx pattern objects
+     * @return PRegEx pattern object
+     */
+    @Function
+    PRegEx AnyOf(List patterns) {
+        if (!patterns || patterns.isEmpty()) {
+            throw new IllegalArgumentException("AnyOf requires at least one pattern")
+        }
+        def patternList = patterns.collect { p ->
+            if (!(p instanceof PRegEx)) {
+                throw new IllegalArgumentException(
+                    "AnyOf requires PRegEx patterns; got ${p?.class?.name}. Use Either(...) for literal strings.")
+            }
+            (PRegEx) p
+        }
+        return new PRegEx.AnyOf(patternList)
+    }
+
+    /**
      * Creates a pattern that matches the literal text (all special regex chars escaped).
      * 
      * Example: Literal("a.b") produces "a\\.b" (matches literal "a.b", not "a" + any char + "b")

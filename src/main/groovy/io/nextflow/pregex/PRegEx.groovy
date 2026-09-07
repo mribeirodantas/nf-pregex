@@ -171,6 +171,39 @@ abstract class PRegEx {
     }
 
     /**
+     * Pattern that matches any of the provided sub-patterns (OR).
+     *
+     * Unlike {@link Either}, which alternates over literal strings (escaping
+     * each one), AnyOf alternates over arbitrary PRegEx sub-patterns, joining
+     * their compiled regex verbatim. This allows expressing alternation of
+     * composite patterns, e.g. AnyOf([Sequence([...]), OneOrMore(Digit())]).
+     */
+    @CompileStatic
+    static class AnyOf extends PRegEx {
+        private final List<PRegEx> patterns
+
+        AnyOf(List<PRegEx> patterns) {
+            if (!patterns || patterns.isEmpty()) {
+                throw new IllegalArgumentException("AnyOf requires at least one pattern")
+            }
+            this.patterns = patterns.asImmutable()
+        }
+
+        @Override
+        String toRegex() {
+            if (patterns.size() == 1) {
+                return patterns[0].toRegex()
+            }
+            return "(?:" + patterns.collect { p -> p.toRegex() }.join("|") + ")"
+        }
+
+        @Override
+        List<PRegEx> children() {
+            return patterns
+        }
+    }
+
+    /**
      * Pattern that wraps a raw, pre-built regex string verbatim.
      *
      * Use this for patterns that are more concise or clearer expressed
@@ -898,7 +931,6 @@ abstract class PRegEx {
     /**
      * Recursively explains pattern components.
      */
-    @groovy.transform.CompileDynamic
     private static String explainComponents(PRegEx pattern, int depth) {
         def indent = "  " * depth
         def result = new StringBuilder()
@@ -925,7 +957,6 @@ abstract class PRegEx {
     /**
      * Gets a human-readable description for a pattern.
      */
-    @groovy.transform.CompileDynamic
     private static String getPatternDescription(PRegEx pattern) {
         if (pattern instanceof Literal) {
             def text = ((Literal) pattern).getText()
@@ -957,6 +988,8 @@ abstract class PRegEx {
         } else if (pattern instanceof Either) {
             def alternatives = ((Either) pattern).getAlternatives()
             return "One of: ${alternatives.join(', ')}"
+        } else if (pattern instanceof AnyOf) {
+            return "One of the following patterns:"
         } else if (pattern instanceof NamedGroup) {
             def name = ((NamedGroup) pattern).getName()
             return "Named group '${name}':"
@@ -977,7 +1010,6 @@ abstract class PRegEx {
     /**
      * Describes what kind of strings this pattern matches.
      */
-    @groovy.transform.CompileDynamic
     private static String describePattern(PRegEx pattern) {
         if (pattern instanceof Literal) {
             def text = ((Literal) pattern).getText()
@@ -1012,7 +1044,6 @@ abstract class PRegEx {
     /**
      * Creates a tree visualization recursively.
      */
-    @groovy.transform.CompileDynamic
     private static String visualizeTree(PRegEx pattern, String prefix, boolean isLast) {
         def result = new StringBuilder()
         def connector = isLast ? "└── " : "├── "
