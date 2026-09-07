@@ -5,11 +5,11 @@
  * in the nf-pregex plugin
  * 
  * To run this example:
- *   nextflow run validation-and-debugging.nf -plugins nf-pregex@0.1.0
+ *   nextflow run validation-and-debugging.nf -plugins nf-pregex@1.0.1
  * 
  * Or add to your nextflow.config:
  *   plugins {
- *       id 'nf-pregex@0.1.0'
+ *       id 'nf-pregex@1.0.1'
  *   }
  */
 
