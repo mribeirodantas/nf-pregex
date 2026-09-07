@@ -41,15 +41,59 @@ Either(List alternatives)
 
 **Examples:**
 ```groovy
-Either(["foo", "bar"])              // → (foo|bar)
-Either(["R1", "R2", "R3"])          // → (R1|R2|R3)
-Either(["fastq", "fq"])             // → (fastq|fq)
+Either(["foo", "bar"])              // → (?:foo|bar)
+Either(["R1", "R2", "R3"])          // → (?:R1|R2|R3)
+Either(["fastq", "fq"])             // → (?:fastq|fq)
 ```
 
 **Notes:**
 - Special regex characters in alternatives are automatically escaped
 - Single alternative returns the literal without alternation syntax
 - Empty alternatives list throws `IllegalArgumentException`
+
+---
+
+### AnyOf(List)
+
+Creates an alternation pattern over arbitrary `PRegEx` sub-patterns. Where
+`Either` alternates over literal **strings** (escaping each one), `AnyOf`
+alternates over already-built **patterns**, joining their regex verbatim.
+
+**Syntax:**
+```groovy
+AnyOf(List patterns)
+```
+
+**Parameters:**
+- `patterns` - List of `PRegEx` pattern objects (at least one required)
+
+**Returns:** PRegEx pattern object
+
+**Examples:**
+```groovy
+include { AnyOf; Sequence; Literal; OneOrMore; Digit } from 'plugin/nf-pregex'
+
+// Alternate over composite patterns
+AnyOf([
+    Sequence([Literal("chr"), OneOrMore(Digit())]),
+    Literal("chrX")
+])                                  // → (?:chr(?:\d)+|chrX)
+
+// Single pattern returns it without alternation syntax
+AnyOf([Literal("foo")])             // → foo
+```
+
+**Notes:**
+- Each element must be a `PRegEx` object; passing a plain string (or any
+  non-`PRegEx` value) throws `IllegalArgumentException` pointing you to `Either`
+- Sub-patterns are joined verbatim — nothing is re-escaped, so escaping is
+  the responsibility of the sub-patterns themselves
+- Single pattern returns its regex without alternation syntax
+- Empty patterns list throws `IllegalArgumentException`
+
+**When to use `Either` vs `AnyOf`:**
+- `Either(["R1", "R2"])` — a fixed set of literal strings
+- `AnyOf([...])` — the alternatives are themselves built `PRegEx` patterns
 
 ---
 
@@ -136,7 +180,7 @@ Group(Literal("test"))            // → (test)
 Group(OneOrMore(Digit()))         // → (\d+)
 
 // Capturing alternatives
-Group(Either(["foo", "bar"]))     // → ((foo|bar))
+Group(Either(["foo", "bar"]))     // → ((?:foo|bar))
 ```
 
 **Real-World Example - Parsing FASTQ Filenames:**
@@ -828,7 +872,7 @@ Literal("hello")
 Creates a capturing group from the pattern.
 
 ```groovy
-Either(["foo", "bar"]).group()      // → ((foo|bar))
+Either(["foo", "bar"]).group()      // → ((?:foo|bar))
 ```
 
 ---
