@@ -34,7 +34,14 @@ class PRegExExtension extends PluginExtensionPoint {
         if (!alternatives || alternatives.isEmpty()) {
             throw new IllegalArgumentException("Either requires at least one alternative")
         }
-        def stringList = alternatives.collect { it.toString() }
+        def stringList = alternatives.collect { a ->
+            if (a instanceof PRegEx) {
+                throw new IllegalArgumentException(
+                    "Either alternates over literal strings, but got a PRegEx pattern. " +
+                    "Use AnyOf(...) to alternate over PRegEx sub-patterns.")
+            }
+            a.toString()
+        }
         return new PRegEx.Either(stringList)
     }
 

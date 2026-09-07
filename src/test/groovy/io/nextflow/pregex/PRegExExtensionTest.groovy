@@ -23,6 +23,51 @@ class PRegExExtensionTest extends Specification {
         pattern.toRegex() == '(?:foo|bar)'
     }
 
+    def "Either function should reject PRegEx alternatives and point to AnyOf"() {
+        when:
+        extension.Either([extension.Literal('foo')])
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('AnyOf')
+    }
+
+    def "AnyOf function should alternate over PRegEx sub-patterns"() {
+        when:
+        def pattern = extension.AnyOf([
+            extension.Sequence([extension.Literal('chr'), extension.OneOrMore(extension.Digit())]),
+            extension.Literal('chrX')
+        ])
+
+        then:
+        pattern.toRegex() == '(?:chr(?:\\d)+|chrX)'
+    }
+
+    def "AnyOf function with single pattern should not add alternation"() {
+        when:
+        def pattern = extension.AnyOf([extension.Literal('foo')])
+
+        then:
+        pattern.toRegex() == 'foo'
+    }
+
+    def "AnyOf function should reject non-PRegEx elements and point to Either"() {
+        when:
+        extension.AnyOf(['foo'])
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('Either')
+    }
+
+    def "AnyOf function should throw exception for empty list"() {
+        when:
+        extension.AnyOf([])
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
     def "Literal function should create Literal pattern"() {
         when:
         def pattern = extension.Literal('test.txt')
